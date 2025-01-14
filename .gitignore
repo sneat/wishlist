@@ -1,0 +1,18 @@
+# Environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# JetBrains setting files
+.idea
+
+# SQLite
+auxiliary.db
+data.db
+*.db-shm
+*.db-wal
+
+# VS Code
+.vscode

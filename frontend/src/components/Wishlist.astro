@@ -1,0 +1,86 @@
+---
+import {fetchWishlist, type BoardGame} from '../utils/api';
+
+const wishlist: BoardGame[] = await fetchWishlist();
+---
+
+<div class="flex flex-wrap justify-between gap-4">
+    {wishlist.sort((a, b) => {
+        // Sort order: price, priority, rating
+        if (a.price && b.price) {
+            if (a.price === b.price) {
+                if (a.priority === b.priority) {
+                    return b.rating - a.rating;
+                }
+                return a.priority - b.priority;
+            }
+            return a.price - b.price;
+        }
+        if (a.price) {
+            return -1;
+        }
+        if (b.price) {
+            return 1;
+        }
+        if (!a.price && !b.price) {
+            if (a.priority === b.priority) {
+                return b.rating - a.rating;
+            }
+            return a.priority - b.priority;
+        }
+        return 1;
+    }).map((game) => (
+            <div class="mx-auto max-w-60 rounded-xl shadow-md hover:shadow-xl bg-gradient-to-b from-slate-400 to-slate-200 hover:from-slate-200 hover:to-slate-100  active:from-slate-400 active:to-slate-200 p-2 flex flex-col justify-between">
+                <div>
+                    <a href={game.bgoUrl}
+                       target="_blank" rel="noopener noreferrer">
+                        <img class="object-contain aspect-square w-32 h-32 rounded-lg mx-auto" src={game.thumbnail}
+                             alt={game.name}/>
+                    </a>
+                    <div class="mt-1">
+                        <h2 class="text-lg text-center">
+                            <a href={game.bgoUrl}
+                               target="_blank" rel="noopener noreferrer">
+                                {game.name} ({game.yearPublished})
+                                {(game.priority && game.priority < 3) &&
+                                    <span class="*:inline-block *:align-top *:fill-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                        </svg>
+                                    </span>
+                                }
+                            </a>
+                        </h2>
+                    </div>
+                </div>
+                <div class="flex flex-row justify-between items-center gap-1">
+                    {game.price &&
+                        <a class="px-4 py-2 text-blue-100 bg-cyan-600 rounded
+                     hover:bg-cyan-900 hover:underline "
+                       href={game.bgoUrl} target="_blank"
+                       rel="noopener noreferrer">
+                        <span>${game.price}</span>
+                    </a>
+                    }
+                    {game.rating &&
+                        <span class="*:inline-block *:align-top">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                 stroke-width="1.5"
+                                 stroke="currentColor" class="size-6">
+                              <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+                            </svg>
+                            {game.rating}
+                        </span>
+                    }
+                    <a class="p-2 rounded bg-indigo-600 hover:bg-indigo-400" href={`https://boardgamegeek.com/boardgame/${game.id}`} target="_blank"
+                       rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+    ))}
+</div>
+
