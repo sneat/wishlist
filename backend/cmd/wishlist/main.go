@@ -10,7 +10,8 @@ import (
 func main() {
 	username := os.Getenv("USERNAME")
 	countryCode := os.Getenv("COUNTRY_CODE")
-	backend := internal.NewBackend(username, countryCode)
+	buildDir := os.Getenv("DIR")
+	backend := internal.NewBackend(username, countryCode, buildDir)
 
 	if err := backend.Start(); err != nil {
 		log.Fatal(err)

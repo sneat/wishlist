@@ -14,6 +14,12 @@ import (
 )
 
 func (b *Backend) syncBGGWishlist(username string) {
+	if username == "" {
+		b.Logger().Error("No BGG username provided.")
+		return
+	}
+
+	start := time.Now()
 	b.Logger().Info("Syncing BGG wishlist items.")
 
 	items, err := b.FetchBGGWishlistItems(username)
@@ -29,7 +35,10 @@ func (b *Backend) syncBGGWishlist(username string) {
 		return
 	}
 
-	b.Logger().With("count", len(items)).Info("Syncing BGG wishlist items completed.")
+	b.Logger().
+		With("duration", time.Since(start).String()).
+		With("count", len(items)).
+		Info("Syncing BGG wishlist items completed.")
 }
 
 func (b *Backend) processBGGItems(items []BGGItem) error {

@@ -8,11 +8,16 @@
 # JetBrains setting files
 .idea
 
+# VS Code
+.vscode
+
+# Project specific
+
+# Frontend public folder
+pb_public
+
 # SQLite
 auxiliary.db
 data.db
 *.db-shm
 *.db-wal
-
-# VS Code
-.vscode

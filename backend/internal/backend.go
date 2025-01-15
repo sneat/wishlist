@@ -15,16 +15,19 @@ import (
 // Backend application.
 type Backend struct {
 	*pocketbase.PocketBase
+
 	Username    string
 	CountryCode string
+	BuildDir    string
 }
 
 // NewBackend creates a new backend application. You must call Start() to start the application.
-func NewBackend(username, countryCode string) *Backend {
+func NewBackend(username, countryCode, buildDir string) *Backend {
 	backend := &Backend{
 		PocketBase:  pocketbase.New(),
 		Username:    username,
 		CountryCode: countryCode,
+		BuildDir:    buildDir,
 	}
 
 	migratecmd.MustRegister(backend, backend.RootCmd, migratecmd.Config{
@@ -64,10 +67,24 @@ func NewBackend(username, countryCode string) *Backend {
 		return se.Next()
 	})
 
-	backend.PocketBase.Cron().MustAdd("sync-bgg", "0 * * * *", func() {
+	if err := backend.PocketBase.Cron().Add("sync-bgg", "@daily", func() {
 		backend.syncBGGWishlist(backend.Username)
 		backend.syncBGOPrices()
-	})
+	}); err != nil {
+		backend.Logger().
+			With("job", "sync-bgg").
+			Error("Failed to add cron job", "error", err)
+	}
+
+	if err := backend.PocketBase.Cron().Add("build-frontend", "@yearly", func() {
+		if err := backend.buildFrontend(); err != nil {
+			backend.Logger().Error("Failed to build frontend", "error", err)
+		}
+	}); err != nil {
+		backend.Logger().
+			With("job", "sync-bgg").
+			Error("Failed to add cron job", "error", err)
+	}
 
 	return backend
 }

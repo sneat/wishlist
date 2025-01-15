@@ -157,6 +157,12 @@ func sanitiseName(name string) string {
 }
 
 func (b *Backend) syncBGOPrices() {
+	if b.CountryCode == "" {
+		b.Logger().Error("Country code not set, skipping BGO price sync")
+		return
+	}
+
+	start := time.Now()
 	b.Logger().Info("Syncing BGO prices.")
 
 	prices, err := b.fetchBGOPricingData()
@@ -170,7 +176,10 @@ func (b *Backend) syncBGOPrices() {
 		return
 	}
 
-	b.Logger().With("count", len(prices)).Info("Syncing BGO prices completed.")
+	b.Logger().
+		With("duration", time.Since(start).String()).
+		With("count", len(prices)).
+		Info("Syncing BGO prices completed.")
 
 	return
 }
