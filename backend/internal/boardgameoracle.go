@@ -156,10 +156,11 @@ func sanitiseName(name string) string {
 	return strings.TrimSpace(builder.String())
 }
 
-func (b *Backend) syncBGOPrices() {
+func (b *Backend) syncBGOPrices() bool {
+	var triggerRebuild bool
 	if b.CountryCode == "" {
 		b.Logger().Error("Country code not set, skipping BGO price sync")
-		return
+		return triggerRebuild
 	}
 
 	start := time.Now()
@@ -168,12 +169,13 @@ func (b *Backend) syncBGOPrices() {
 	prices, err := b.fetchBGOPricingData()
 	if err != nil {
 		b.Logger().Error("Failed to sync BGO prices", "error", err)
-		return
+		return triggerRebuild
 	}
 
-	if err = b.processBGOPrices(prices); err != nil {
+	triggerRebuild, err = b.processBGOPrices(prices)
+	if err != nil {
 		b.Logger().Error("Failed to process BGO prices", "error", err)
-		return
+		return triggerRebuild
 	}
 
 	b.Logger().
@@ -181,10 +183,13 @@ func (b *Backend) syncBGOPrices() {
 		With("count", len(prices)).
 		Info("Syncing BGO prices completed.")
 
-	return
+	return triggerRebuild
 }
 
-func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) error {
+// processBGOPrices processes the BGO prices and updates the records.
+// It returns a boolean indicating whether a frontend rebuild is required.
+func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) (bool, error) {
+	var triggerRebuild bool
 	for _, price := range prices {
 		b.Logger().Debug(fmt.Sprintf("Processing BGO price for %s", price.BgoId))
 
@@ -195,10 +200,21 @@ func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) error {
 				return nil
 			}
 
-			roundedValue := math.Round(price.Latest.Min)
+			roundedValue := int(math.Round(price.Latest.Min))
 			if roundedValue == 0 {
 				return nil
 			}
+
+			oldPrice := record.GetInt("price")
+			if oldPrice != roundedValue {
+				b.Logger().
+					With("old_price", oldPrice).
+					With("new_price", roundedValue).
+					With("name", record.GetString("name")).
+					Info("Price changed")
+				triggerRebuild = true
+			}
+
 			record.Set("price", roundedValue)
 
 			if err = txApp.Save(record); err != nil {
@@ -213,7 +229,7 @@ func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) error {
 		}
 	}
 
-	return nil
+	return triggerRebuild, nil
 }
 
 func (b *Backend) fetchBGOPricingData() ([]*BGOPriceSummary, error) {

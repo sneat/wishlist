@@ -12,6 +12,7 @@
 .vscode
 
 # Project specific
+wishlist-backend-linux-arm64
 
 # Frontend public folder
 pb_public

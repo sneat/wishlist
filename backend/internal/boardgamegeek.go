@@ -13,10 +13,11 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func (b *Backend) syncBGGWishlist(username string) {
+func (b *Backend) syncBGGWishlist(username string) bool {
+	var triggerRebuild bool
 	if username == "" {
 		b.Logger().Error("No BGG username provided.")
-		return
+		return triggerRebuild
 	}
 
 	start := time.Now()
@@ -25,26 +26,32 @@ func (b *Backend) syncBGGWishlist(username string) {
 	items, err := b.FetchBGGWishlistItems(username)
 	if err != nil {
 		b.Logger().Error("Failed to fetch BGG wishlist items", "error", err)
-		return
+		return triggerRebuild
 	}
 
 	b.Logger().With("items", len(items)).Info("Fetched BGG wishlist items.")
 
-	if err = b.processBGGItems(items); err != nil {
+	triggerRebuild, err = b.processBGGItems(items)
+	if err != nil {
 		b.Logger().Error("Failed to process BGG items", "error", err)
-		return
+		return triggerRebuild
 	}
 
 	b.Logger().
 		With("duration", time.Since(start).String()).
 		With("count", len(items)).
 		Info("Syncing BGG wishlist items completed.")
+
+	return triggerRebuild
 }
 
-func (b *Backend) processBGGItems(items []BGGItem) error {
+// processBGGItems processes the BGG items and updates the database.
+// It returns true if the frontend should be rebuilt.
+func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
+	var triggerRebuild bool
 	collection, err := b.FindCollectionByNameOrId("items")
 	if err != nil {
-		return err
+		return triggerRebuild, err
 	}
 
 	// Track the items that are processed so we can delete the ones that are no longer in the wishlist
@@ -138,6 +145,10 @@ func (b *Backend) processBGGItems(items []BGGItem) error {
 		}
 	}
 
+	if len(newItems) > 0 {
+		triggerRebuild = true
+	}
+
 	ids := make([]string, 0, len(processedItems))
 	for id := range processedItems {
 		ids = append(ids, id)
@@ -146,7 +157,7 @@ func (b *Backend) processBGGItems(items []BGGItem) error {
 	allRecords, err := b.FindAllRecords("items")
 	if err != nil {
 		b.Logger().Error("Failed to get all records", "error", err)
-		return err
+		return triggerRebuild, err
 	}
 
 	for _, record := range allRecords {
@@ -174,7 +185,7 @@ func (b *Backend) processBGGItems(items []BGGItem) error {
 		}
 	}
 
-	return err
+	return triggerRebuild, err
 }
 
 // FetchBGGWishlistItems fetches the wishlist items for the specified username from Board Game Geek.

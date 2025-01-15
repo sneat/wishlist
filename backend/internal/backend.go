@@ -59,18 +59,12 @@ func NewBackend(username, countryCode, buildDir string) *Backend {
 		})
 
 		// Trigger a sync on initial load
-		go func(b *Backend) {
-			b.syncBGGWishlist(backend.Username)
-			b.syncBGOPrices()
-		}(backend)
+		go backend.runJobs()
 
 		return se.Next()
 	})
 
-	if err := backend.PocketBase.Cron().Add("sync-bgg", "@daily", func() {
-		backend.syncBGGWishlist(backend.Username)
-		backend.syncBGOPrices()
-	}); err != nil {
+	if err := backend.PocketBase.Cron().Add("sync-bgg", "@daily", backend.runJobs); err != nil {
 		backend.Logger().
 			With("job", "sync-bgg").
 			Error("Failed to add cron job", "error", err)
@@ -87,6 +81,21 @@ func NewBackend(username, countryCode, buildDir string) *Backend {
 	}
 
 	return backend
+}
+
+func (b *Backend) runJobs() {
+	triggerBGGRebuild := b.syncBGGWishlist(b.Username)
+	triggerBGORebuild := b.syncBGOPrices()
+
+	if triggerBGGRebuild || triggerBGORebuild {
+		b.Logger().
+			With("bgg_rebuild", triggerBGGRebuild).
+			With("bgo_rebuild", triggerBGORebuild).
+			Info("Triggering frontend rebuild")
+		if err := b.buildFrontend(); err != nil {
+			b.Logger().Error("Failed to build frontend", "error", err)
+		}
+	}
 }
 
 // Start starts the backend application.
