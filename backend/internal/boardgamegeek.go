@@ -166,12 +166,11 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 			continue
 		}
 
-		if !processedItems[bggId] {
+		if !processedItems[bggId] && !record.GetBool("deleted") {
 			b.Logger().Info(fmt.Sprintf("Marking %s (%s) as deleted", record.Get("name"), bggId))
 
 			record.Set("deleted", true)
-			err := b.Save(record)
-			if err != nil {
+			if err = b.Save(record); err != nil {
 				b.Logger().Error(
 					fmt.Sprintf(
 						"Failed to mark %s (%s) as deleted",

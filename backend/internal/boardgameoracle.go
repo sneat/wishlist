@@ -237,7 +237,7 @@ func (b *Backend) fetchBGOPricingData() ([]*BGOPriceSummary, error) {
 
 	records, err := b.FindRecordsByFilter(
 		"items",
-		"bgo_id != ''",
+		"bgo_id != '' && deleted = false",
 		"",
 		0,
 		0,

@@ -1,11 +1,12 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [tailwind()],
   site: 'https://wishlist.mcmillan.id.au',
-  outDir: '../backend/pb_public'
+  outDir: '../backend/pb_public',
+  vite: {
+    plugins: [tailwindcss()]
+  }
 });
