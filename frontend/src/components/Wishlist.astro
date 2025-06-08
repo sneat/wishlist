@@ -10,8 +10,19 @@ function isNewGame(game: BoardGame): boolean {
 
   const createdDate = new Date(game.createdAt);
   const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
   return createdDate >= oneMonthAgo;
+}
+
+function isUpdatedGame(game: BoardGame): boolean {
+  if (isNewGame(game) || !game?.lastModified) {
+    return false;
+  }
+
+  const updatedDate = new Date(game.lastModified);
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+  return updatedDate >= oneMonthAgo;
 }
 ---
 <div class="items-center max-w-sm mx-auto mb-4 flex gap-2">
@@ -56,11 +67,33 @@ function isNewGame(game: BoardGame): boolean {
     class="px-3 py-2 font-medium rounded bg-white border border-gray-300 text-gray-900 transition-colors dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
     data-active="false"
   >
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+         class="size-6">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
     </svg>
 
   </button>
+
+  <button
+    id="owned"
+    type="button"
+    title="Show owned games"
+    aria-label="Show owned games"
+    class="px-3 py-2 font-medium rounded bg-white border border-gray-300 text-gray-900 transition-colors dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+    data-active="false"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+         class="size-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>
+
+  </button>
+</div>
+
+<div id="count"
+     class="text-center max-w-sm mx-auto mb-4 py-2 px-4 rounded-md bg-gray-50 border border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+  &nbsp;
 </div>
 
 <div class="flex flex-wrap justify-between gap-4">
@@ -92,11 +125,20 @@ function isNewGame(game: BoardGame): boolean {
   }).map((game) => (
     <div
       class="game-card mx-auto max-w-60 rounded-xl shadow-md hover:shadow-xl bg-linear-to-b from-slate-400 to-slate-200 hover:from-slate-200 hover:to-slate-100 active:from-slate-400 active:to-slate-200 p-2 flex flex-col justify-between relative overflow-hidden"
-      data-name={game.name.toLowerCase()}>
+      data-name={game.name.toLowerCase()}
+      data-owned={game.isOwned ? "true" : "false"}
+      data-is-new={isNewGame(game)}
+      data-is-updated={isUpdatedGame(game)}>
       {isNewGame(game) && (
         <div
-          class="absolute top-2 -right-8 -translate-y-0 translate-x-0 w-28 text-center transform rotate-45 bg-red-600 text-white font-bold py-1 shadow-lg">
+          class="absolute top-2 -right-8 w-28 text-center transform rotate-45 bg-red-600 text-white font-bold py-1 shadow-lg">
           NEW
+        </div>
+      )}
+      {isUpdatedGame(game) && (
+        <div
+          class="absolute top-4 -right-10 w-36 text-center transform rotate-45 bg-red-600 text-white font-bold py-1 shadow-lg">
+          UPDATED
         </div>
       )}
       <div>
@@ -110,7 +152,7 @@ function isNewGame(game: BoardGame): boolean {
             <a href={game.bgoUrl}
                target="_blank" rel="noopener noreferrer">
               {game.name} ({game.yearPublished})
-              {(game.priority && game.priority < 3) &&
+              {(game.priority > 0 && game.priority < 3) &&
                 <span class="*:inline-block *:align-top *:fill-red-500">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                            stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -124,13 +166,23 @@ function isNewGame(game: BoardGame): boolean {
         </div>
       </div>
       <div class="flex flex-row justify-between items-center gap-1">
-        {game.price > 0 &&
+        {game.price > 0 && !game.isOwned && (
           <a class="px-4 py-2 text-blue-100 bg-cyan-600 rounded hover:bg-cyan-900 hover:underline"
              href={game.bgoUrl} target="_blank"
              rel="noopener noreferrer">
             <span>${game.price}</span>
           </a>
-        }
+        )}
+        {game.isOwned && (
+          <span title="I own this game" aria-label="I own this game"
+                class="*:inline-block *:align-top px-3 py-2 font-medium rounded border dark:border-green-700 dark:bg-green-300 dark:text-green-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                 stroke="currentColor"
+                 class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+          </span>
+        )}
         {game.rating &&
           <span class="*:inline-block *:align-top">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -154,34 +206,110 @@ function isNewGame(game: BoardGame): boolean {
   ))}
 </div>
 
-<div id="no-results" role="alert" class="max-w-sm mx-auto border-s-4 border-red-700 bg-red-50 p-4 hidden">
+<div id="no-results" class="max-w-sm mx-auto border-s-4 border-red-700 bg-red-50 p-4 hidden">
   <div class="flex items-center gap-2 text-red-700">
-    <img src="/favicon-32x32.png">
-
-    <strong class="font-medium"> "<span id="search-term"></span>" is not on the wishlist. </strong>
+    <img src="/favicon-32x32.png" alt="d6 dice">
+    <strong id="no-results-message" class="font-medium"></strong>
   </div>
 </div>
 
 <script>
-  const games = Array.from(document.querySelectorAll(".game-card"));
-  const searchInput = document.getElementById("search");
-  const searchTermElement = document.getElementById("search-term");
+  const games = Array.from(document.querySelectorAll(".game-card") as NodeListOf<HTMLElement>);
+  const searchInput = document.getElementById("search") as HTMLInputElement | null;
+  const gameCountElement = document.getElementById("count");
   const noResultsElement = document.getElementById("no-results");
+  const noResultsMessageElement = document.getElementById("no-results-message");
   const newFilterButton = document.getElementById("new-filter");
+  const ownedButton = document.getElementById("owned");
+  let updateQueryParamsTimeout: number | null = null;
+
+  // Add this after your variable declarations in the script section
+  function updateQueryParams() {
+    // Clear any pending timeout
+    if (updateQueryParamsTimeout !== null) {
+      clearTimeout(updateQueryParamsTimeout);
+    }
+
+    updateQueryParamsTimeout = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const searchTerm = searchInput?.value?.trim() || "";
+      const showOnlyNew = newFilterButton?.dataset?.active === "true";
+      const showOnlyOwned = ownedButton?.dataset?.active === "true";
+
+      // Update or remove search parameter
+      if (searchTerm) {
+        params.set("q", searchTerm);
+      } else {
+        params.delete("q");
+      }
+
+      // Update or remove new filter parameter
+      if (showOnlyNew) {
+        params.set("new", "true");
+      } else {
+        params.delete("new");
+      }
+
+      // Update or remove owned filter parameter
+      if (showOnlyOwned) {
+        params.set("owned", "true");
+      } else {
+        params.delete("owned");
+      }
+
+      // Update URL without reloading the page
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      if (newUrl !== window.location.pathname + window.location.search) {
+        window.history.pushState({}, '', newUrl);
+      }
+
+      updateQueryParamsTimeout = null;
+    }, 500); // Delay to avoid too many updates
+  }
+
+  function applyQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Apply search parameter
+    if (searchInput) {
+      searchInput.value = params.get("q") || "";
+    }
+
+    // Apply new filter parameter
+    if (newFilterButton) {
+      const onlyNew = params.get("new");
+      newFilterButton.dataset.active = onlyNew ? "true" : "false";
+      newFilterButton.classList.toggle("invert", onlyNew === "true");
+    }
+
+    // Apply owned filter parameter
+    if (ownedButton) {
+      const onlyOwned = params.get("owned");
+      ownedButton.dataset.active = onlyOwned ? "true" : "false";
+      ownedButton.classList.toggle("dark:bg-green-300", onlyOwned === "true");
+      ownedButton.classList.toggle("dark:border-green-700", onlyOwned === "true");
+      ownedButton.classList.toggle("dark:text-green-700", onlyOwned === "true");
+      ownedButton.classList.toggle("dark:text-white", !onlyOwned);
+    }
+  }
 
   // Function to filter games based on current filters
   function filterGames() {
     const searchTerm = searchInput?.value?.toLowerCase().trim() || "";
     const showOnlyNew = newFilterButton?.dataset?.active === "true";
+    const showOnlyOwned = ownedButton?.dataset?.active === "true";
 
     games.forEach(game => {
       const gameName = game.dataset.name || "";
-      const isNew = game.querySelector(".absolute.rotate-45.bg-red-600") !== null;
+      const isNew = game.dataset.isNew === "true";
+      const isUpdated = game.dataset.isUpdated === "true";
+      const isOwned = game.dataset.owned === "true";
 
       const matchesSearch = gameName.includes(searchTerm);
-      const matchesNewFilter = !showOnlyNew || isNew;
+      const matchesNewFilter = !showOnlyNew || (showOnlyNew && (isNew || isUpdated));
+      const matchesOwnedFilter = (!showOnlyOwned && !isOwned) || (showOnlyOwned && isOwned);
 
-      if (matchesSearch && matchesNewFilter) {
+      if (matchesSearch && matchesNewFilter && matchesOwnedFilter) {
         game.style.display = "";
       } else {
         game.style.display = "none";
@@ -189,17 +317,51 @@ function isNewGame(game: BoardGame): boolean {
     });
 
     // Update "no results" message
-    if (searchTermElement) {
-      searchTermElement.textContent = searchTerm;
+    if (noResultsMessageElement) {
+      let message = "I'm not tracking any board games.";
+
+      if (showOnlyNew && showOnlyOwned) {
+        message = searchTerm
+          ? `No games matching "${searchTerm}" that I own have been added in the last month.`
+          : "No games that I own have been added in the last month.";
+      } else if (showOnlyNew) {
+        message = searchTerm
+          ? `No games matching "${searchTerm}" have been added in the last month.`
+          : "No games have been added in the last month.";
+      } else if (showOnlyOwned) {
+        message = searchTerm
+          ? `I don't own any games matching "${searchTerm}".`
+          : "I don't own any board games yet 😭";
+      } else if (searchTerm) {
+        message = `No games matching "${searchTerm}" are on my wishlist.`;
+      }
+
+      noResultsMessageElement.textContent = message;
     }
+
     const visibleGames = games.filter(game => game.style.display !== "none");
     noResultsElement?.classList.toggle("hidden", visibleGames.length > 0);
+
+    if (gameCountElement) {
+      gameCountElement.textContent = `Showing ${visibleGames.length}`;
+      if (showOnlyNew) {
+        gameCountElement.textContent += " recently added";
+      }
+      gameCountElement.textContent += ` game${visibleGames.length !== 1 ? "s" : ""}`;
+      if (showOnlyOwned) {
+        gameCountElement.textContent += " that I own";
+      }
+      gameCountElement.textContent += ".";
+    }
   }
 
   // Search input event listener
   searchInput?.addEventListener("input", () => {
     filterGames();
+    updateQueryParams();
   });
+
+  // TODO Add Url query parameter support for search, new filter, and owned filter
 
   // New filter button event listener
   newFilterButton?.addEventListener("click", () => {
@@ -207,6 +369,31 @@ function isNewGame(game: BoardGame): boolean {
     newFilterButton.dataset.active = (!currentlyActive).toString();
     newFilterButton.classList.toggle("invert");
 
+    updateQueryParams();
     filterGames();
   });
+
+  // Owned filter button event listener
+  ownedButton?.addEventListener("click", () => {
+    const currentlyActive = ownedButton.dataset.active === "true";
+    ownedButton.dataset.active = (!currentlyActive).toString();
+    ownedButton.classList.toggle("dark:bg-green-300");
+    ownedButton.classList.toggle("dark:border-green-700");
+    ownedButton.classList.toggle("dark:text-green-700");
+    ownedButton.classList.toggle("dark:text-white");
+
+    updateQueryParams();
+    filterGames();
+  });
+
+  window.addEventListener("popstate", (event) => {
+    console.log("Popstate event triggered", event, "Current URL:", window.location.href);
+    // Reapply query params and filter games when navigating back/forward
+    applyQueryParams();
+    filterGames();
+  });
+
+  // Initial filter application
+  applyQueryParams();
+  filterGames();
 </script>

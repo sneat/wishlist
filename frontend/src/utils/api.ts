@@ -8,6 +8,8 @@ export interface BoardGame {
     rating: number;
     priority: number;
     price: number;
+    isOwned?: boolean;
+    lastModified: string;
     createdAt: string;
     bggUrl?: string;
     bgoUrl?: string;
@@ -27,7 +29,9 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         rating: item.rating,
         priority: parseInt(item.priority, 10) || 0,
         price: parseInt(item.price, 10) || 0,
-        createdAt: item.createdAt,
+        isOwned: !!item.is_owned,
+        lastModified: item.last_modified,
+        createdAt: item.created_at,
         bggUrl: `https://boardgamegeek.com/boardgame/${item.bgg_id}`,
         bgoUrl: item.bgo_id ?
             `https://www.boardgameoracle.com/en-AU/boardgame/price/${item.bgo_id}/` :

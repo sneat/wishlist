@@ -54,12 +54,9 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 		return triggerRebuild, err
 	}
 
-	// Track the items that are processed so we can delete the ones that are no longer in the wishlist
-	processedItems := make(map[string]bool)
 	newItems := make([]*core.Record, 0)
 
 	for _, item := range items {
-		processedItems[item.ObjectID] = true
 		b.Logger().Debug(fmt.Sprintf("Processing %s (%s)", item.Name, item.ObjectID))
 
 		if err = b.RunInTransaction(func(txApp core.App) error {
@@ -68,7 +65,9 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 				b.Logger().Warn(fmt.Sprintf("Failed to find record %s (%s)", item.Name, item.ObjectID), "error", err)
 			}
 
+			isNewRecord := false
 			if record == nil {
+				isNewRecord = true
 				record = core.NewRecord(collection)
 				newItems = append(newItems, record)
 			}
@@ -112,7 +111,15 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 			record.Set("priority", item.Status.WishlistPriority)
 			record.Set("playing_time", item.Stats.PlayingTime)
 			record.Set("bgg_id", item.ObjectID)
-			record.Set("deleted", false)
+			isOwned := item.Status.Own == "1"
+			if record.GetBool("is_owned") != isOwned {
+				newItems = append(newItems, record)
+			}
+			record.Set("is_owned", isOwned)
+			record.Set("last_modified", item.Status.GetLastModified().Format("2006-01-02 15:04:05.000Z"))
+			if isNewRecord {
+				record.Set("created_at", item.Status.GetLastModified().Format("2006-01-02 15:04:05.000Z"))
+			}
 
 			if err = txApp.Save(record); err != nil {
 				return err
@@ -149,48 +156,14 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 		triggerRebuild = true
 	}
 
-	ids := make([]string, 0, len(processedItems))
-	for id := range processedItems {
-		ids = append(ids, id)
-	}
-
-	allRecords, err := b.FindAllRecords("items")
-	if err != nil {
-		b.Logger().Error("Failed to get all records", "error", err)
-		return triggerRebuild, err
-	}
-
-	for _, record := range allRecords {
-		bggId := record.Get("bgg_id").(string)
-		if bggId == "" {
-			continue
-		}
-
-		if !processedItems[bggId] && !record.GetBool("deleted") {
-			b.Logger().Info(fmt.Sprintf("Marking %s (%s) as deleted", record.Get("name"), bggId))
-
-			record.Set("deleted", true)
-			if err = b.Save(record); err != nil {
-				b.Logger().Error(
-					fmt.Sprintf(
-						"Failed to mark %s (%s) as deleted",
-						record.Get("name"),
-						bggId,
-					),
-					"error",
-					err,
-				)
-			}
-		}
-	}
-
 	return triggerRebuild, err
 }
 
 // FetchBGGWishlistItems fetches the wishlist items for the specified username from Board Game Geek.
 func (b *Backend) FetchBGGWishlistItems(username string) ([]BGGItem, error) {
 	i := 0
-	url := "https://boardgamegeek.com/xmlapi2/collection?username=" + username + "&wishlist=1&stats=1"
+	url := "https://boardgamegeek.com/xmlapi2/collection?username=blairm&stats=1"
+	//url := "https://boardgamegeek.com/xmlapi2/collection?username=" + username + "&stats=1"
 	for {
 		items, err := b.fetchBGGData(url)
 		if err != nil {
@@ -207,7 +180,7 @@ func (b *Backend) FetchBGGWishlistItems(username string) ([]BGGItem, error) {
 		}
 	}
 
-	return nil, errors.New("failed to fetch data from BGG")
+	return nil, errors.New(fmt.Sprintf("failed to fetch data from BGG: %s", url))
 }
 
 func (b *Backend) fetchBGGData(url string) ([]BGGItem, error) {
@@ -331,4 +304,18 @@ type BGGStatus struct {
 	PreOrdered string `xml:"preordered,attr" json:"pre_ordered"`
 	// LastModified is the last modified date.
 	LastModified string `xml:"lastmodified,attr" json:"last_modified"`
+}
+
+// GetLastModified parses the LastModified field and returns it as a time.Time.
+func (s *BGGStatus) GetLastModified() time.Time {
+	if s.LastModified == "" {
+		return time.Time{}
+	}
+
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", s.LastModified, time.UTC)
+	if err != nil {
+		return time.Time{}
+	}
+
+	return t
 }
