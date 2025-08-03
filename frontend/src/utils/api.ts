@@ -5,6 +5,7 @@ export interface BoardGame {
     image: string;
     yearPublished: string;
     players: string;
+    playingTime?: string;
     rating: number;
     priority: number;
     price: number;
@@ -26,6 +27,7 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         image: item.image,
         yearPublished: item.year_published,
         players: item.players,
+        playingTime: item.playing_time,
         rating: item.rating,
         priority: parseInt(item.priority, 10) || 0,
         price: parseInt(item.price, 10) || 0,

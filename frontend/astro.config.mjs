@@ -8,5 +8,8 @@ export default defineConfig({
   outDir: '../backend/pb_public',
   vite: {
     plugins: [tailwindcss()]
+  },
+  image: {
+    domains: ["cf.geekdo-images.com"],
   }
 });

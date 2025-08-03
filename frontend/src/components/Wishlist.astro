@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import { fetchWishlist, type BoardGame } from "../utils/api";
 
 const wishlist: BoardGame[] = await fetchWishlist();
@@ -98,7 +99,19 @@ function isUpdatedGame(game: BoardGame): boolean {
 
 <div class="flex flex-wrap justify-between gap-4">
   {wishlist.sort((a, b) => {
-    // Sort order: price, priority, rating
+    // Sort order:
+    //   if owned: rating
+    //   else: price, priority, rating
+
+    if (!a.isOwned && b.isOwned) {
+      return -1;
+    } else if (a.isOwned && !b.isOwned) {
+      return 1;
+    }
+
+    if (a.isOwned && b.isOwned) {
+      return (b.rating || 0) - (a.rating || 0);
+    }
 
     if (a.price && b.price) {
       if (a.price === b.price) {
@@ -127,6 +140,8 @@ function isUpdatedGame(game: BoardGame): boolean {
       class="game-card mx-auto max-w-60 rounded-xl shadow-md hover:shadow-xl bg-linear-to-b from-slate-400 to-slate-200 hover:from-slate-200 hover:to-slate-100 active:from-slate-400 active:to-slate-200 p-2 flex flex-col justify-between relative overflow-hidden"
       data-name={game.name.toLowerCase()}
       data-owned={game.isOwned ? "true" : "false"}
+      data-players={game.players}
+      data-playtime={game.playingTime}
       data-is-new={isNewGame(game)}
       data-is-updated={isUpdatedGame(game)}>
       {isNewGame(game) && (
@@ -144,8 +159,8 @@ function isUpdatedGame(game: BoardGame): boolean {
       <div>
         <a href={game.bgoUrl}
            target="_blank" rel="noopener noreferrer">
-          <img class="object-contain aspect-square w-32 h-32 rounded-lg mx-auto" src={game.thumbnail}
-               alt={game.name} />
+          <Image class="object-contain aspect-square w-32 h-32 rounded-lg mx-auto" src={game.thumbnail}
+                 inferSize alt={game.name} />
         </a>
         <div class="mt-1">
           <h2 class="text-lg text-center">
@@ -174,14 +189,7 @@ function isUpdatedGame(game: BoardGame): boolean {
           </a>
         )}
         {game.isOwned && (
-          <span title="I own this game" aria-label="I own this game"
-                class="*:inline-block *:align-top px-3 py-2 font-medium rounded border dark:border-green-700 dark:bg-green-300 dark:text-green-700">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                 stroke="currentColor"
-                 class="size-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-            </svg>
-          </span>
+          <span title="I own this game" aria-label="I own this game" class="px-3"></span>
         )}
         {game.rating &&
           <span class="*:inline-block *:align-top">
@@ -191,7 +199,7 @@ function isUpdatedGame(game: BoardGame): boolean {
                         d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
                 </svg>
             {game.rating}
-              </span>
+          </span>
         }
         <a class="p-2 rounded bg-indigo-600 hover:bg-indigo-400" href={game.bggUrl} target="_blank"
            rel="noopener noreferrer">
@@ -202,13 +210,23 @@ function isUpdatedGame(game: BoardGame): boolean {
           </svg>
         </a>
       </div>
+      {game.isOwned && (
+        <div class="text-sm text-gray-600 dark:text-gray-500 flex justify-between gap-1">
+          {game.players && (
+            <span><strong>Players:</strong> {game.players}</span>
+            )}
+          {game.playingTime && (
+            <span><strong>Playtime:</strong> {game.playingTime}min</span>
+          )}
+        </div>
+      )}
     </div>
   ))}
 </div>
 
 <div id="no-results" class="max-w-sm mx-auto border-s-4 border-red-700 bg-red-50 p-4 hidden">
   <div class="flex items-center gap-2 text-red-700">
-    <img src="/favicon-32x32.png" alt="d6 dice">
+    <Image src="/favicon-32x32.png" alt="d6 dice" width="32" height="32" />
     <strong id="no-results-message" class="font-medium"></strong>
   </div>
 </div>
@@ -360,8 +378,6 @@ function isUpdatedGame(game: BoardGame): boolean {
     filterGames();
     updateQueryParams();
   });
-
-  // TODO Add Url query parameter support for search, new filter, and owned filter
 
   // New filter button event listener
   newFilterButton?.addEventListener("click", () => {
