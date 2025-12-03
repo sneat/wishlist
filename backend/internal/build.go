@@ -14,7 +14,7 @@ func (b *Backend) buildFrontend() error {
 	b.Logger().Info("Building frontend")
 
 	// Check if the frontend directory exists and is a directory
-	if stat, err := os.Stat(b.BuildDir); os.IsNotExist(err) || !stat.IsDir() {
+	if stat, err := os.Stat(b.buildDir); os.IsNotExist(err) || !stat.IsDir() {
 		possiblePaths := []string{"./frontend", "../frontend"}
 
 		// Check if any of the possible paths exist and is a directory
@@ -31,32 +31,32 @@ func (b *Backend) buildFrontend() error {
 		}
 
 		b.Logger().
-			With("old_path", b.BuildDir).
+			With("old_path", b.buildDir).
 			With("new_path", validPath).
 			Info("Updating frontend build directory path")
-		b.BuildDir = validPath
+		b.buildDir = validPath
 	}
 
-	fullPath, err := filepath.Abs(b.BuildDir)
+	fullPath, err := filepath.Abs(b.buildDir)
 	if err != nil {
 		b.Logger().
-			With("path", b.BuildDir).
+			With("path", b.buildDir).
 			With("error", err).
 			Error("Failed to get absolute path for frontend directory")
 		return err
 	}
 
-	if b.BuildDir != fullPath {
+	if b.buildDir != fullPath {
 		b.Logger().
-			With("old_path", b.BuildDir).
+			With("old_path", b.buildDir).
 			With("new_path", fullPath).
 			Info("Updating frontend build directory path")
-		b.BuildDir = fullPath
+		b.buildDir = fullPath
 	}
 
 	// Run npm install first
 	cmd := exec.Command("npm", "install")
-	cmd.Dir = b.BuildDir
+	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		b.Logger().
@@ -66,7 +66,7 @@ func (b *Backend) buildFrontend() error {
 	}
 
 	cmd = exec.Command("npm", "run", "build")
-	cmd.Dir = b.BuildDir
+	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		b.Logger().

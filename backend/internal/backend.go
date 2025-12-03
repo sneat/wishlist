@@ -16,18 +16,59 @@ import (
 type Backend struct {
 	*pocketbase.PocketBase
 
-	Username    string
-	CountryCode string
-	BuildDir    string
+	username     string
+	password     string
+	countryCode  string
+	buildDir     string
+	bggAuthToken string
+}
+
+// BackendOption configures Backend.
+type BackendOption func(*Backend)
+
+// WithUsername sets the backend username.
+func WithUsername(username string) BackendOption {
+	return func(b *Backend) {
+		b.username = username
+	}
+}
+
+// WithPassword sets the backend password.
+func WithPassword(password string) BackendOption {
+	return func(b *Backend) {
+		b.password = password
+	}
+}
+
+// WithCountryCode sets the backend country code.
+func WithCountryCode(countryCode string) BackendOption {
+	return func(b *Backend) {
+		b.countryCode = countryCode
+	}
+}
+
+// WithBuildDir sets the frontend build directory.
+func WithBuildDir(buildDir string) BackendOption {
+	return func(b *Backend) {
+		b.buildDir = buildDir
+	}
+}
+
+// WithBGGAuthToken sets the auth token for BGG requests.
+func WithBGGAuthToken(token string) BackendOption {
+	return func(b *Backend) {
+		b.bggAuthToken = token
+	}
 }
 
 // NewBackend creates a new backend application. You must call Start() to start the application.
-func NewBackend(username, countryCode, buildDir string) *Backend {
+func NewBackend(opts ...BackendOption) *Backend {
 	backend := &Backend{
-		PocketBase:  pocketbase.New(),
-		Username:    username,
-		CountryCode: countryCode,
-		BuildDir:    buildDir,
+		PocketBase: pocketbase.New(),
+	}
+
+	for _, opt := range opts {
+		opt(backend)
 	}
 
 	migratecmd.MustRegister(backend, backend.RootCmd, migratecmd.Config{
@@ -84,7 +125,7 @@ func NewBackend(username, countryCode, buildDir string) *Backend {
 }
 
 func (b *Backend) runJobs() {
-	triggerBGGRebuild := b.syncBGGWishlist(b.Username)
+	triggerBGGRebuild := b.syncBGGWishlist()
 	triggerBGORebuild := b.syncBGOPrices()
 
 	if triggerBGGRebuild || triggerBGORebuild {

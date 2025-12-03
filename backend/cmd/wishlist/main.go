@@ -22,9 +22,18 @@ func main() {
 	}
 
 	username := os.Getenv("USERNAME")
+	password := os.Getenv("PASSWORD")
 	countryCode := os.Getenv("COUNTRY_CODE")
 	buildDir := os.Getenv("DIR")
-	backend := internal.NewBackend(username, countryCode, buildDir)
+	bggAuthToken := os.Getenv("BGG_AUTH_TOKEN")
+
+	backend := internal.NewBackend(
+		internal.WithUsername(username),
+		internal.WithPassword(password),
+		internal.WithCountryCode(countryCode),
+		internal.WithBuildDir(buildDir),
+		internal.WithBGGAuthToken(bggAuthToken),
+	)
 
 	if err := backend.Start(); err != nil {
 		log.Fatal(err)

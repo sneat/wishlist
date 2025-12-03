@@ -13,9 +13,9 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func (b *Backend) syncBGGWishlist(username string) bool {
+func (b *Backend) syncBGGWishlist() bool {
 	var triggerRebuild bool
-	if username == "" {
+	if b.username == "" {
 		b.Logger().Error("No BGG username provided.")
 		return triggerRebuild
 	}
@@ -23,7 +23,7 @@ func (b *Backend) syncBGGWishlist(username string) bool {
 	start := time.Now()
 	b.Logger().Info("Syncing BGG wishlist items.")
 
-	items, err := b.FetchBGGWishlistItems(username)
+	items, err := b.FetchBGGWishlistItems()
 	if err != nil {
 		b.Logger().Error("Failed to fetch BGG wishlist items", "error", err)
 		return triggerRebuild
@@ -159,13 +159,12 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 	return triggerRebuild, err
 }
 
-// FetchBGGWishlistItems fetches the wishlist items for the specified username from Board Game Geek.
-func (b *Backend) FetchBGGWishlistItems(username string) ([]BGGItem, error) {
+// FetchBGGWishlistItems fetches the wishlist items for the configured username from Board Game Geek.
+func (b *Backend) FetchBGGWishlistItems() ([]BGGItem, error) {
 	i := 0
-	url := "https://boardgamegeek.com/xmlapi2/collection?username=blairm&stats=1"
-	//url := "https://boardgamegeek.com/xmlapi2/collection?username=" + username + "&stats=1"
+	attempts := 10
 	for {
-		items, err := b.fetchBGGData(url)
+		items, err := b.fetchBGGData()
 		if err != nil {
 			return nil, err
 		}
@@ -175,16 +174,30 @@ func (b *Backend) FetchBGGWishlistItems(username string) ([]BGGItem, error) {
 		}
 
 		i++
-		if i > 10 {
+		if i > attempts {
 			break
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("failed to fetch data from BGG: %s", url))
+	return nil, errors.New(fmt.Sprintf("failed to fetch data from BGG after %d attempts", attempts))
 }
 
-func (b *Backend) fetchBGGData(url string) ([]BGGItem, error) {
-	resp, err := http.Get(url)
+func (b *Backend) fetchBGGData() ([]BGGItem, error) {
+	url := fmt.Sprintf("https://boardgamegeek.com/xmlapi2/collection?username=%s&stats=1", b.username)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if b.bggAuthToken != "" {
+		req.Header.Set("Authorization", "Bearer "+b.bggAuthToken)
+	} else if b.username != "" && b.password != "" {
+		req.AddCookie(&http.Cookie{Name: "bggusername", Value: b.username})
+		req.AddCookie(&http.Cookie{Name: "bggpassword", Value: b.password})
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

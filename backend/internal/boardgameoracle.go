@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pocketbase/pocketbase/core"
 	"io"
 	"math"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/pocketbase/pocketbase/core"
 )
 
 func (b *Backend) autoPopulateBGOIds() error {
@@ -158,7 +159,7 @@ func sanitiseName(name string) string {
 
 func (b *Backend) syncBGOPrices() bool {
 	var triggerRebuild bool
-	if b.CountryCode == "" {
+	if b.countryCode == "" {
 		b.Logger().Error("Country code not set, skipping BGO price sync")
 		return triggerRebuild
 	}
@@ -277,12 +278,12 @@ func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceSummary, erro
 
 	requestData := make(map[string]BgoPriceRequestData)
 	requestData["0"] = BgoPriceRequestData{
-		Region: b.CountryCode,
+		Region: b.countryCode,
 		Key:    bgoId,
 		Range:  "7d",
 	}
 	requestData["1"] = BgoPriceRequestData{
-		Region: b.CountryCode,
+		Region: b.countryCode,
 		Key:    bgoId,
 	}
 
