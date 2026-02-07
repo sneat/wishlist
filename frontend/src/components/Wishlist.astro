@@ -403,7 +403,6 @@ function isUpdatedGame(game: BoardGame): boolean {
   });
 
   window.addEventListener("popstate", (event) => {
-    console.log("Popstate event triggered", event, "Current URL:", window.location.href);
     // Reapply query params and filter games when navigating back/forward
     applyQueryParams();
     filterGames();

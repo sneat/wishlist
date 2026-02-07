@@ -16,8 +16,11 @@ export interface BoardGame {
     bgoUrl?: string;
 }
 
+// Use environment variable or fall back to localhost for development
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8090';
+
 export async function fetchWishlist(): Promise<BoardGame[]> {
-    const response = await fetch(`https://wishlist.mcmillan.id.au/api/v1/bgg-wishlist`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/bgg-wishlist`);
     const data = await response.json();
 
     return data.map((item: any) => ({

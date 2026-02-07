@@ -67,16 +67,29 @@ Once dependencies are installed, configure the environment variables and start t
 
 The backend is configured via a small set of environment variables:
 
+### Backend Environment Variables
+
 | Name             | Required?            | Description                                                                                                                       | Example           |
 |------------------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|-------------------|
 | `USERNAME`       | Yes                  | Your BoardGameGeek username. Used for knowing which wishlist to sync.                                                             | `my_bgg_username` |
 | `BGG_AUTH_TOKEN` | Yes*                 | BoardGameGeek application auth token from <https://boardgamegeek.com/applications>. Preferred over username/password.             | `abc123...`       |
-| `PASSWORD`       | Yes*                 | Your BoardGameGeek password. Only needed if you’re not using an auth token.                                                       | `my_bgg_password` |
+| `PASSWORD`       | Yes*                 | Your BoardGameGeek password. Only needed if you're not using an auth token.                                                       | `my_bgg_password` |
 | `COUNTRY_CODE`   | Yes                  | ISO country code used when looking up prices via Board Game Oracle (e.g. AU).                                                     | `AU`              |
 | `DIR`            | No (but recommended) | Path to the frontend source directory. Used as the starting point for building the frontend with `npm install` / `npm run build`. | `../frontend`     |
 | `ENV`            | No                   | When set to `development`, enables extra development tooling via Outrig.                                                          | `development`     |
 
-\* **BGG authentication**  
+### Frontend Environment Variables
+
+The frontend can optionally be configured via environment variables:
+
+| Name              | Required? | Description                                                                          | Example                        |
+|-------------------|-----------|--------------------------------------------------------------------------------------|--------------------------------|
+| `PUBLIC_API_URL`  | No        | Backend API endpoint. Defaults to `http://127.0.0.1:8090` for local development.     | `https://api.example.com`      |
+| `PUBLIC_SITE_URL` | No        | Public site URL for sitemap and canonical URLs. Defaults to `http://localhost:4321`. | `https://wishlist.example.com` |
+
+To configure these for local development, create a `frontend/.env` file (see `frontend/.env.example` for a template).
+
+**BGG authentication**  
 You can authenticate with BoardGameGeek in one of two ways:
 
 - **Recommended:** set `BGG_AUTH_TOKEN` to a token created at <https://boardgamegeek.com/applications>.
@@ -89,7 +102,7 @@ Keep your BGG credentials and token secret. Don’t commit them to version contr
 
 ## Running in Development
 
-In development you typically run the backend and frontend in separate terminals.
+In development, you typically run the backend and frontend in separate terminals.
 
 ### 1. Start the backend
 
@@ -164,7 +177,7 @@ Make sure the backend is running before you start interacting with the UI.
 
 ## Running in Production
 
-In production you typically:
+In production, you typically:
 
 1. Build and run the backend as a binary.
 2. Let the backend manage building and serving the frontend.
@@ -182,7 +195,7 @@ This produces a `wishlist` (or `wishlist.exe` on Windows) binary in the `backend
 
 ### 2. Configure environment variables
 
-Configure the same environment variables as in development, but without `ENV=development`:
+Configure the backend environment variables as in development, but without `ENV=development`:
 
 ```bash
 cd backend
@@ -202,6 +215,14 @@ export COUNTRY_CODE="AU"
 # Frontend source directory (Astro project)
 export DIR="../frontend"
 ```
+
+#### 2.1. Configure frontend environment variables (optional)
+
+Copy `frontend/.env.example` to `frontend/.env` and update the values within.
+
+These variables will be used when the backend builds the frontend. If not set:
+- `PUBLIC_API_URL` defaults to `http://127.0.0.1:8090`
+- `PUBLIC_SITE_URL` defaults to `http://localhost:4321`
 
 When the backend starts, it will:
 
@@ -260,6 +281,9 @@ A simple deployment setup looks like:
    - Set `COUNTRY_CODE` (e.g. `AU`).
    - Set `DIR` to the Astro project directory (usually `../frontend`).
    - Optionally set `ENV=production`.
+   - **(Optional)** For custom domain deployments, create `frontend/.env` with:
+     - `PUBLIC_API_URL` - Your backend URL
+     - `PUBLIC_SITE_URL` - Your frontend URL
 
 4. **Run the backend under a process manager**
 
