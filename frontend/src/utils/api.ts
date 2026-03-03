@@ -14,6 +14,14 @@ export interface BoardGame {
     createdAt: string;
     bggUrl?: string;
     bgoUrl?: string;
+    description?: string;
+    minAge?: number;
+    bestPlayerCount?: string;
+    bestPlayerCountNumbers?: string;
+    categories?: string[];
+    mechanics?: string[];
+    bggRank?: number;
+    detailsLastFetched?: string;
 }
 
 // Use environment variable or fall back to localhost for development
@@ -41,5 +49,13 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         bgoUrl: item.bgo_id ?
             `https://www.boardgameoracle.com/en-AU/boardgame/price/${item.bgo_id}/` :
             `https://www.boardgameoracle.com/en-AU/boardgame/search?q=${encodeURI(item.name)}`,
+        description: item.description,
+        minAge: item.minage,
+        bestPlayerCount: item.best_player_count,
+        bestPlayerCountNumbers: item.best_player_count_numbers,
+        categories: item.categories,
+        mechanics: item.mechanics,
+        bggRank: item.bgg_rank,
+        detailsLastFetched: item.details_last_fetched,
     }));
 }

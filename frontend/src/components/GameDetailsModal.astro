@@ -1,0 +1,236 @@
+---
+// This modal is controlled by client-side JavaScript
+// The game data is passed through a data attribute on the modal element
+---
+
+<div id="game-details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/50" data-game="{}">
+  <div id="modal-backdrop" class="min-h-screen px-4 flex items-center justify-center md:p-0">
+    <div id="modal-content" class="relative w-full h-screen md:h-auto md:max-w-3xl md:my-8 bg-white dark:bg-gray-900 md:rounded-lg shadow-xl">
+      <button
+        id="close-modal"
+        type="button"
+        class="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+        aria-label="Close modal"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="h-full overflow-y-auto p-6 md:p-8">
+        <div class="flex justify-center mb-6">
+          <img id="modal-image" src="" alt="" class="w-64 h-64 object-contain rounded-lg" />
+        </div>
+
+        <h2 id="modal-title" class="text-2xl md:text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white"></h2>
+
+        <div class="flex gap-6 mb-2 text-sm text-gray-600 dark:text-gray-400 justify-center flex-wrap">
+          <div id="modal-players"></div>
+          <div id="modal-rating"></div>
+          <div id="modal-playtime"></div>
+        </div>
+
+        <div id="modal-player-recs" class="mb-6 text-sm text-gray-600 dark:text-gray-400 text-center hidden">
+          <div id="modal-best-players"></div>
+        </div>
+
+        <div id="modal-wishlist-info" class="flex gap-6 mb-6 text-sm text-gray-600 dark:text-gray-400 justify-center flex-wrap">
+          <div id="modal-priority"></div>
+          <div id="modal-price"></div>
+        </div>
+
+        <div class="flex gap-4 justify-center mb-6">
+          <a id="modal-bgg-link" href="#" target="_blank" rel="noopener noreferrer"
+             class="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
+            View on BGG
+          </a>
+          <a id="modal-bgo-link" href="#" target="_blank" rel="noopener noreferrer"
+             class="px-6 py-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium">
+            Find Prices
+          </a>
+        </div>
+
+        <div id="modal-categories-section" class="pt-6 border-t border-gray-200 dark:border-gray-700 mb-4 hidden">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Categories</h3>
+          <div id="modal-categories" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div id="modal-mechanics-section" class="mb-6 hidden">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Mechanics</h3>
+          <div id="modal-mechanics" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div id="modal-description" class="pt-6 border-t border-gray-200 dark:border-gray-700 mb-6 prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface GameData {
+    id: string;
+    name: string;
+    thumbnail: string;
+    image: string;
+    yearPublished: string;
+    players: string;
+    playingTime?: string;
+    rating: number;
+    priority: number;
+    price: number;
+    isOwned?: boolean;
+    lastModified: string;
+    createdAt: string;
+    bggUrl?: string;
+    bgoUrl?: string;
+    description?: string;
+    minAge?: number;
+    bestPlayerCount?: string;
+    bestPlayerCountNumbers?: string;
+    categories?: string[];
+    mechanics?: string[];
+    bggRank?: number;
+    detailsLastFetched?: string;
+  }
+
+  const modal = document.getElementById('game-details-modal') as HTMLElement;
+  const modalBackdrop = document.getElementById('modal-backdrop') as HTMLElement;
+  const modalContent = document.getElementById('modal-content') as HTMLElement;
+  const closeButton = document.getElementById('close-modal') as HTMLElement;
+
+  function openModal(game: GameData) {
+    const modalImage = document.getElementById('modal-image') as HTMLImageElement;
+    const modalTitle = document.getElementById('modal-title') as HTMLElement;
+    const modalRating = document.getElementById('modal-rating') as HTMLElement;
+    const modalPlayers = document.getElementById('modal-players') as HTMLElement;
+    const modalPlaytime = document.getElementById('modal-playtime') as HTMLElement;
+    const modalDescription = document.getElementById('modal-description') as HTMLElement;
+    const modalBggLink = document.getElementById('modal-bgg-link') as HTMLAnchorElement;
+    const modalBgoLink = document.getElementById('modal-bgo-link') as HTMLAnchorElement;
+    const modalWishlistInfo = document.getElementById('modal-wishlist-info') as HTMLElement;
+    const modalPriority = document.getElementById('modal-priority') as HTMLElement;
+    const modalPrice = document.getElementById('modal-price') as HTMLElement;
+    const modalPlayerRecs = document.getElementById('modal-player-recs') as HTMLElement;
+    const modalBestPlayers = document.getElementById('modal-best-players') as HTMLElement;
+    const modalCategoriesSection = document.getElementById('modal-categories-section') as HTMLElement;
+    const modalCategories = document.getElementById('modal-categories') as HTMLElement;
+    const modalMechanicsSection = document.getElementById('modal-mechanics-section') as HTMLElement;
+    const modalMechanics = document.getElementById('modal-mechanics') as HTMLElement;
+
+    if (modalImage) {
+      modalImage.src = game.image || game.thumbnail;
+      modalImage.alt = game.name;
+    }
+    if (modalTitle) modalTitle.textContent = game.name;
+    if (modalRating) modalRating.innerHTML = `<strong>Rating:</strong> ${game.rating || 'N/A'}`;
+    if (modalPlayers) modalPlayers.innerHTML = `<strong>Players:</strong> ${game.players || 'N/A'}`;
+
+    if (modalPlayerRecs && game.bestPlayerCount) {
+      modalPlayerRecs.classList.remove('hidden');
+      if (modalBestPlayers) {
+        modalBestPlayers.innerHTML = `${game.bestPlayerCount}`;
+      }
+    } else if (modalPlayerRecs) {
+      modalPlayerRecs.classList.add('hidden');
+    }
+
+    if (modalPlaytime) {
+      if (game.playingTime) {
+        modalPlaytime.innerHTML = `<strong>Playtime:</strong> ${game.playingTime} min`;
+        modalPlaytime.classList.remove('hidden');
+      } else {
+        modalPlaytime.classList.add('hidden');
+      }
+    }
+
+    if (game.isOwned) {
+      modalWishlistInfo?.classList.add('hidden');
+    } else {
+      modalWishlistInfo?.classList.remove('hidden');
+      if (modalPriority) {
+        const priorityText = game.priority === 1 ? 'Must have' : game.priority === 2 ? 'Love to have' : game.priority === 3 ? 'Like to have' : game.priority === 4 ? 'Thinking about it' : 'Wishlist priority unknown';
+        modalPriority.innerHTML = `<strong>Priority:</strong> ${priorityText}`;
+      }
+      if (modalPrice) {
+        if (game.price > 0) {
+          modalPrice.innerHTML = `<strong>Price:</strong> $${game.price}`;
+          modalPrice.classList.remove('hidden');
+        } else {
+          modalPrice.classList.add('hidden');
+        }
+      }
+    }
+
+    if (modalDescription) {
+      modalDescription.innerHTML = game.description || '<em>No description available.</em>';
+    }
+
+    if (modalCategoriesSection && modalCategories) {
+      if (game.categories && game.categories.length > 0) {
+        modalCategoriesSection.classList.remove('hidden');
+        modalCategories.innerHTML = game.categories
+          .map(cat => `<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">${cat}</span>`)
+          .join('');
+      } else {
+        modalCategoriesSection.classList.add('hidden');
+      }
+    }
+
+    if (modalMechanicsSection && modalMechanics) {
+      if (game.mechanics && game.mechanics.length > 0) {
+        modalMechanicsSection.classList.remove('hidden');
+        modalMechanics.innerHTML = game.mechanics
+          .map(mech => `<span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">${mech}</span>`)
+          .join('');
+      } else {
+        modalMechanicsSection.classList.add('hidden');
+      }
+    }
+
+    // Links
+    if (modalBggLink) {
+      if (game.bggUrl) {
+        modalBggLink.href = game.bggUrl;
+        modalBggLink.classList.remove('hidden');
+      } else {
+        modalBggLink.classList.add('hidden');
+      }
+    }
+    if (modalBgoLink) {
+      if (game.bgoUrl) {
+        modalBgoLink.href = game.bgoUrl;
+        modalBgoLink.classList.remove('hidden');
+      } else {
+        modalBgoLink.classList.add('hidden');
+      }
+    }
+
+    // Show modal
+    modal?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+
+  function closeModal() {
+    modal?.classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+
+  closeButton?.addEventListener('click', closeModal);
+
+  // Close on backdrop click (clicking outside the modal content)
+  modalBackdrop?.addEventListener('click', (e) => {
+    // Only close if clicking the backdrop itself, not the modal content
+    if (!modalContent?.contains(e.target as Node)) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+
+  // Expose openModal globally so card clicks can use it
+  (window as any).openGameModal = openModal;
+</script>

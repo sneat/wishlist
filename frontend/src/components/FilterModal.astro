@@ -1,0 +1,436 @@
+---
+// FilterModal.astro - Advanced filters in a modal
+---
+
+<div id="filter-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/50">
+  <div id="filter-backdrop" class="min-h-screen px-4 flex items-center justify-center md:p-0">
+    <!-- Modal content -->
+    <div id="filter-content" class="relative w-full h-screen max-h-screen md:h-auto md:max-w-2xl md:my-8 bg-white dark:bg-gray-900 md:rounded-lg shadow-xl flex flex-col">
+      <!-- Close button -->
+      <button
+        id="close-filter-modal"
+        type="button"
+        class="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+        aria-label="Close filters"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Modal header -->
+      <div class="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Filters</h2>
+      </div>
+
+      <!-- Modal body with scrollable content -->
+      <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+        <!-- Quick Filters -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Quick Filters
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="modal-new-filter" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Show only new games (added in last month)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="modal-owned-filter" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Show only games I own</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Player Count Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Number of Players
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-player-count="1" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">1</button>
+            <button type="button" data-player-count="2" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">2</button>
+            <button type="button" data-player-count="3" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">3</button>
+            <button type="button" data-player-count="4" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">4</button>
+            <button type="button" data-player-count="5" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">5</button>
+            <button type="button" data-player-count="6" class="player-count-btn px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-gray-900 dark:text-white">6+</button>
+          </div>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Priority Level
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-priority="1" class="priority-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Must have</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-priority="2" class="priority-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Love to have</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-priority="3" class="priority-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Like to have</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-priority="4" class="priority-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Thinking about it</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Price Range Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Price
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-price-range="0-20" class="price-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Under $20</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-price-range="20-40" class="price-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">$20 - $40</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-price-range="40-60" class="price-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">$40 - $60</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-price-range="60-80" class="price-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">$60 - $80</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-price-range="80-999" class="price-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">$80+</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Play Time Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Play Time
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-time-range="0-30" class="time-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Quick (&lt;30 min)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-time-range="30-60" class="time-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Short (30-60 min)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-time-range="60-120" class="time-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Medium (60-120 min)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-time-range="120-999" class="time-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+              <span class="text-sm text-gray-900 dark:text-white">Long (120+ min)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Categories Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Categories
+          </label>
+          <div id="categories-container" class="space-y-2 max-h-48 overflow-y-auto">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Mechanics Filter -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            Mechanics
+          </label>
+          <div id="mechanics-container" class="space-y-2 max-h-48 overflow-y-auto">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal footer -->
+      <div class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-6 flex gap-4 justify-end">
+        <button
+          id="clear-all-filters"
+          type="button"
+          class="px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium"
+        >
+          Clear All
+        </button>
+        <button
+          id="apply-filters"
+          type="button"
+          class="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const filterModal = document.getElementById('filter-modal') as HTMLElement;
+  const filterBackdrop = document.getElementById('filter-backdrop') as HTMLElement;
+  const filterContent = document.getElementById('filter-content') as HTMLElement;
+  const closeButton = document.getElementById('close-filter-modal') as HTMLElement;
+  const applyButton = document.getElementById('apply-filters') as HTMLElement;
+  const clearAllButton = document.getElementById('clear-all-filters') as HTMLElement;
+
+  function openFilterModal() {
+    filterModal?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeFilterModal() {
+    filterModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Callback for when filters change
+  let onFiltersChange: (() => void) | null = null;
+
+  function notifyFiltersChanged() {
+    if (onFiltersChange) {
+      onFiltersChange();
+    }
+  }
+
+  // Player count filter state
+  let selectedPlayerCount: number | null = null;
+
+  // Quick filter state
+  let showOnlyNew = false;
+  let showOnlyOwned = false;
+
+  // Quick filter checkbox handlers
+  const newFilterCheckbox = document.getElementById('modal-new-filter') as HTMLInputElement;
+  const ownedFilterCheckbox = document.getElementById('modal-owned-filter') as HTMLInputElement;
+
+  newFilterCheckbox?.addEventListener('change', () => {
+    showOnlyNew = newFilterCheckbox.checked;
+    notifyFiltersChanged();
+  });
+
+  ownedFilterCheckbox?.addEventListener('change', () => {
+    showOnlyOwned = ownedFilterCheckbox.checked;
+    notifyFiltersChanged();
+  });
+
+  // Player count button handlers
+  const playerCountButtons = document.querySelectorAll('.player-count-btn');
+  playerCountButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const count = parseInt((button as HTMLElement).dataset.playerCount || '0');
+      
+      if (selectedPlayerCount === count) {
+        // Deselect
+        selectedPlayerCount = null;
+        button.classList.remove('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+      } else {
+        // Clear previous selection
+        playerCountButtons.forEach(btn => {
+          btn.classList.remove('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+        });
+        // Select new
+        selectedPlayerCount = count;
+        button.classList.add('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+      }
+      notifyFiltersChanged();
+    });
+  });
+
+  // Priority filter state
+  let selectedPriorities: number[] = [];
+
+  // Priority checkbox handlers
+  const priorityCheckboxes = document.querySelectorAll('.priority-checkbox') as NodeListOf<HTMLInputElement>;
+  priorityCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const priority = parseInt(checkbox.dataset.priority || '0');
+      if (checkbox.checked) {
+        if (!selectedPriorities.includes(priority)) {
+          selectedPriorities.push(priority);
+        }
+      } else {
+        selectedPriorities = selectedPriorities.filter(p => p !== priority);
+      }
+      notifyFiltersChanged();
+    });
+  });
+
+  // Price filter state
+  let selectedPriceRanges: string[] = [];
+
+  // Price checkbox handlers
+  const priceCheckboxes = document.querySelectorAll('.price-checkbox') as NodeListOf<HTMLInputElement>;
+  priceCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const range = checkbox.dataset.priceRange || '';
+      if (checkbox.checked) {
+        if (!selectedPriceRanges.includes(range)) {
+          selectedPriceRanges.push(range);
+        }
+      } else {
+        selectedPriceRanges = selectedPriceRanges.filter(r => r !== range);
+      }
+      notifyFiltersChanged();
+    });
+  });
+
+  // Play time filter state
+  let selectedTimeRanges: string[] = [];
+
+  // Time checkbox handlers
+  const timeCheckboxes = document.querySelectorAll('.time-checkbox') as NodeListOf<HTMLInputElement>;
+  timeCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const range = checkbox.dataset.timeRange || '';
+      if (checkbox.checked) {
+        if (!selectedTimeRanges.includes(range)) {
+          selectedTimeRanges.push(range);
+        }
+      } else {
+        selectedTimeRanges = selectedTimeRanges.filter(r => r !== range);
+      }
+      notifyFiltersChanged();
+    });
+  });
+
+  // Categories and mechanics filter state
+  let selectedCategories: string[] = [];
+  let selectedMechanics: string[] = [];
+
+  function getFilterState() {
+    return {
+      showOnlyNew: showOnlyNew,
+      showOnlyOwned: showOnlyOwned,
+      playerCount: selectedPlayerCount,
+      priorities: selectedPriorities,
+      priceRanges: selectedPriceRanges,
+      timeRanges: selectedTimeRanges,
+      categories: selectedCategories,
+      mechanics: selectedMechanics
+    };
+  }
+
+  function setFilterState(state: any) {
+    // Quick filters
+    showOnlyNew = state.showOnlyNew || false;
+    showOnlyOwned = state.showOnlyOwned || false;
+    if (newFilterCheckbox) newFilterCheckbox.checked = showOnlyNew;
+    if (ownedFilterCheckbox) ownedFilterCheckbox.checked = showOnlyOwned;
+
+    // Player count
+    selectedPlayerCount = state.playerCount;
+    playerCountButtons.forEach(btn => {
+      const count = parseInt((btn as HTMLElement).dataset.playerCount || '0');
+      if (count === selectedPlayerCount) {
+        btn.classList.add('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+      } else {
+        btn.classList.remove('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+      }
+    });
+
+    // Priorities
+    selectedPriorities = state.priorities || [];
+    priorityCheckboxes.forEach(checkbox => {
+      const priority = parseInt(checkbox.dataset.priority || '0');
+      checkbox.checked = selectedPriorities.includes(priority);
+    });
+
+    // Price ranges
+    selectedPriceRanges = state.priceRanges || [];
+    priceCheckboxes.forEach(checkbox => {
+      const range = checkbox.dataset.priceRange || '';
+      checkbox.checked = selectedPriceRanges.includes(range);
+    });
+
+    // Time ranges
+    selectedTimeRanges = state.timeRanges || [];
+    timeCheckboxes.forEach(checkbox => {
+      const range = checkbox.dataset.timeRange || '';
+      checkbox.checked = selectedTimeRanges.includes(range);
+    });
+
+    // Categories and mechanics
+    selectedCategories = state.categories || [];
+    selectedMechanics = state.mechanics || [];
+  }
+
+  // Close button
+  closeButton?.addEventListener('click', closeFilterModal);
+
+  // Apply button
+  applyButton?.addEventListener('click', closeFilterModal);
+
+  // Clear all filters
+  clearAllButton?.addEventListener('click', () => {
+    // Reset quick filters
+    showOnlyNew = false;
+    showOnlyOwned = false;
+    if (newFilterCheckbox) newFilterCheckbox.checked = false;
+    if (ownedFilterCheckbox) ownedFilterCheckbox.checked = false;
+
+    // Reset player count
+    selectedPlayerCount = null;
+    playerCountButtons.forEach(btn => {
+      btn.classList.remove('bg-indigo-600', 'dark:bg-indigo-500', 'text-white', 'border-indigo-600', 'dark:border-indigo-500');
+    });
+
+    // Reset priorities
+    selectedPriorities = [];
+    priorityCheckboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    // Reset price ranges
+    selectedPriceRanges = [];
+    priceCheckboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    // Reset time ranges
+    selectedTimeRanges = [];
+    timeCheckboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    // Reset categories and mechanics
+    selectedCategories = [];
+    selectedMechanics = [];
+
+    notifyFiltersChanged();
+  });
+
+  // Backdrop click
+  filterBackdrop?.addEventListener('click', (e) => {
+    if (!filterContent?.contains(e.target as Node)) {
+      closeFilterModal();
+    }
+  });
+
+  // Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !filterModal?.classList.contains('hidden')) {
+      closeFilterModal();
+    }
+  });
+
+  // Expose globally
+  (window as any).openFilterModal = openFilterModal;
+  (window as any).getFilterState = getFilterState;
+  (window as any).setFilterState = setFilterState;
+  (window as any).setFiltersChangeCallback = (callback: () => void) => {
+    onFiltersChange = callback;
+  };
+</script>
