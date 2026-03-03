@@ -111,13 +111,28 @@ func NewBackend(opts ...BackendOption) *Backend {
 			Error("Failed to add cron job", "error", err)
 	}
 
+	if err := backend.PocketBase.Cron().Add("refresh-all-details", "@yearly", func() {
+		backend.Logger().Info("Starting yearly full refresh of all thing details")
+		if triggerRebuild, err := backend.fetchThingDetailsForItems(true, 0); err != nil {
+			backend.Logger().Error("Failed to refresh all thing details", "error", err)
+		} else if triggerRebuild {
+			if err = backend.buildFrontend(); err != nil {
+				backend.Logger().Error("Failed to build frontend", "error", err)
+			}
+		}
+	}); err != nil {
+		backend.Logger().
+			With("job", "refresh-all-details").
+			Error("Failed to add cron job", "error", err)
+	}
+
 	if err := backend.PocketBase.Cron().Add("build-frontend", "@yearly", func() {
 		if err := backend.buildFrontend(); err != nil {
 			backend.Logger().Error("Failed to build frontend", "error", err)
 		}
 	}); err != nil {
 		backend.Logger().
-			With("job", "sync-bgg").
+			With("job", "build-frontend").
 			Error("Failed to add cron job", "error", err)
 	}
 
@@ -128,10 +143,19 @@ func (b *Backend) runJobs() {
 	triggerBGGRebuild := b.syncBGGWishlist()
 	triggerBGORebuild := b.syncBGOPrices()
 
-	if triggerBGGRebuild || triggerBGORebuild {
+	// Fetch thing details for up to 50 items that need it
+	triggerDetailsRebuild := false
+	if detailsRebuild, err := b.fetchThingDetailsForItems(false, 50); err != nil {
+		b.Logger().Error("Failed to fetch thing details", "error", err)
+	} else {
+		triggerDetailsRebuild = detailsRebuild
+	}
+
+	if triggerBGGRebuild || triggerBGORebuild || triggerDetailsRebuild {
 		b.Logger().
 			With("bgg_rebuild", triggerBGGRebuild).
 			With("bgo_rebuild", triggerBGORebuild).
+			With("details_rebuild", triggerDetailsRebuild).
 			Info("Triggering frontend rebuild")
 		if err := b.buildFrontend(); err != nil {
 			b.Logger().Error("Failed to build frontend", "error", err)
