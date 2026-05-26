@@ -1,12 +1,24 @@
 package internal
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 )
+
+// lockfileHash returns the hex-encoded SHA-256 of <buildDir>/package-lock.json.
+func lockfileHash(buildDir string) (string, error) {
+	data, err := os.ReadFile(filepath.Join(buildDir, "package-lock.json"))
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
 
 func (b *Backend) buildFrontend() error {
 	start := time.Now()
