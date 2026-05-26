@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const lockfileHashMarker = ".wishlist-lockfile-hash"
+
 // lockfileHash returns the hex-encoded SHA-256 of <buildDir>/package-lock.json.
 func lockfileHash(buildDir string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(buildDir, "package-lock.json"))
@@ -18,6 +20,35 @@ func lockfileHash(buildDir string) (string, error) {
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// shouldInstallDeps reports whether npm dependency installation is required and a short
+// reason suitable for logging. When force is true, install is always required.
+func shouldInstallDeps(buildDir string, force bool) (bool, string) {
+	if force {
+		return true, "force=true"
+	}
+
+	nmInfo, err := os.Stat(filepath.Join(buildDir, "node_modules"))
+	if err != nil || !nmInfo.IsDir() {
+		return true, "node_modules missing"
+	}
+
+	markerBytes, err := os.ReadFile(filepath.Join(buildDir, "node_modules", lockfileHashMarker))
+	if err != nil {
+		return true, "marker missing"
+	}
+
+	current, err := lockfileHash(buildDir)
+	if err != nil {
+		return true, "lockfile unreadable"
+	}
+
+	if string(markerBytes) != current {
+		return true, "lockfile changed"
+	}
+
+	return false, "lockfile unchanged"
 }
 
 func (b *Backend) buildFrontend() error {
