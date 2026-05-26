@@ -12,7 +12,13 @@ import (
 
 const lockfileHashMarker = ".wishlist-lockfile-hash"
 
-// lockfileHash returns the hex-encoded SHA-256 of <buildDir>/package-lock.json.
+type buildMode int
+
+const (
+	buildModeCached buildMode = iota
+	buildModeForceReinstall
+)
+
 func lockfileHash(buildDir string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(buildDir, "package-lock.json"))
 	if err != nil {
@@ -22,11 +28,9 @@ func lockfileHash(buildDir string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// shouldInstallDeps reports whether npm dependency installation is required and a short
-// reason suitable for logging. When force is true, install is always required.
-func shouldInstallDeps(buildDir string, force bool) (bool, string) {
-	if force {
-		return true, "force=true"
+func shouldInstallDeps(buildDir string, mode buildMode) (bool, string) {
+	if mode == buildModeForceReinstall {
+		return true, "force reinstall"
 	}
 
 	nmInfo, err := os.Stat(filepath.Join(buildDir, "node_modules"))
@@ -51,16 +55,34 @@ func shouldInstallDeps(buildDir string, force bool) (bool, string) {
 	return false, "lockfile unchanged"
 }
 
-func (b *Backend) buildFrontend() error {
+func (b *Backend) buildFrontend(mode buildMode) error {
 	start := time.Now()
 
 	b.Logger().Info("Building frontend")
 
-	// Check if the frontend directory exists and is a directory
-	if stat, err := os.Stat(b.buildDir); os.IsNotExist(err) || !stat.IsDir() {
+	if err := b.resolveBuildDir(); err != nil {
+		return err
+	}
+
+	if err := b.ensureDependencies(mode); err != nil {
+		return err
+	}
+
+	if err := b.runAstroBuild(); err != nil {
+		return err
+	}
+
+	b.Logger().
+		With("duration", time.Since(start).String()).
+		Info("Frontend build completed")
+
+	return nil
+}
+
+func (b *Backend) resolveBuildDir() error {
+	if stat, err := os.Stat(b.buildDir); os.IsNotExist(err) || (err == nil && !stat.IsDir()) {
 		possiblePaths := []string{"./frontend", "../frontend"}
 
-		// Check if any of the possible paths exist and is a directory
 		var validPath string
 		for _, path := range possiblePaths {
 			if stat, err = os.Stat(path); err == nil && stat.IsDir() {
@@ -97,7 +119,12 @@ func (b *Backend) buildFrontend() error {
 		b.buildDir = fullPath
 	}
 
-	// Run npm install first
+	return nil
+}
+
+func (b *Backend) ensureDependencies(mode buildMode) error {
+	_ = mode
+
 	cmd := exec.Command("npm", "install")
 	cmd.Dir = b.buildDir
 
@@ -108,7 +135,11 @@ func (b *Backend) buildFrontend() error {
 		return err
 	}
 
-	cmd = exec.Command("npm", "run", "build")
+	return nil
+}
+
+func (b *Backend) runAstroBuild() error {
+	cmd := exec.Command("npm", "run", "build")
 	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -117,10 +148,6 @@ func (b *Backend) buildFrontend() error {
 			Error("Failed to build frontend (npm run build)")
 		return err
 	}
-
-	b.Logger().
-		With("duration", time.Since(start).String()).
-		Info("Frontend build completed")
 
 	return nil
 }

@@ -41,41 +41,45 @@ func TestShouldInstallDeps(t *testing.T) {
 	// nodeModulesKind controls how <buildDir>/node_modules is set up:
 	//   "" — absent; "dir" — a directory; "file" — a regular file (degenerate case).
 	type fixture struct {
-		name             string
-		writeLockfile    bool
-		nodeModulesKind  string
-		writeMarker      bool
-		markerContents   string
-		force            bool
-		wantInstall      bool
+		name            string
+		writeLockfile   bool
+		nodeModulesKind string
+		writeMarker     bool
+		markerContents  string
+		mode            buildMode
+		wantInstall     bool
 	}
 
 	cases := []fixture{
 		{
 			name:          "marker missing forces install",
 			writeLockfile: true, nodeModulesKind: "dir", writeMarker: false,
+			mode:        buildModeCached,
 			wantInstall: true,
 		},
 		{
 			name:          "marker matches lockfile and node_modules exists skips install",
 			writeLockfile: true, nodeModulesKind: "dir", writeMarker: true, markerContents: lockfileSHA,
+			mode:        buildModeCached,
 			wantInstall: false,
 		},
 		{
 			name:          "stale marker forces install",
 			writeLockfile: true, nodeModulesKind: "dir", writeMarker: true, markerContents: otherSHA,
+			mode:        buildModeCached,
 			wantInstall: true,
 		},
 		{
 			name:          "node_modules is a file not a directory forces install",
 			writeLockfile: true, nodeModulesKind: "file", writeMarker: false,
+			mode:        buildModeCached,
 			wantInstall: true,
 		},
 		{
-			name:          "force=true installs even when marker matches",
+			name:          "force reinstall installs even when marker matches",
 			writeLockfile: true, nodeModulesKind: "dir", writeMarker: true, markerContents: lockfileSHA,
-			force:         true,
-			wantInstall:   true,
+			mode:        buildModeForceReinstall,
+			wantInstall: true,
 		},
 	}
 
@@ -104,7 +108,7 @@ func TestShouldInstallDeps(t *testing.T) {
 				}
 			}
 
-			got, reason := shouldInstallDeps(dir, tc.force)
+			got, reason := shouldInstallDeps(dir, tc.mode)
 			if got != tc.wantInstall {
 				t.Fatalf("shouldInstallDeps: got (%v, %q), want install=%v", got, reason, tc.wantInstall)
 			}

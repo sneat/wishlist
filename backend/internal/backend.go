@@ -116,7 +116,7 @@ func NewBackend(opts ...BackendOption) *Backend {
 		if triggerRebuild, err := backend.fetchThingDetailsForItems(true, 0); err != nil {
 			backend.Logger().Error("Failed to refresh all thing details", "error", err)
 		} else if triggerRebuild {
-			if err = backend.buildFrontend(); err != nil {
+			if err = backend.buildFrontend(buildModeForceReinstall); err != nil {
 				backend.Logger().Error("Failed to build frontend", "error", err)
 			}
 		}
@@ -127,7 +127,7 @@ func NewBackend(opts ...BackendOption) *Backend {
 	}
 
 	if err := backend.PocketBase.Cron().Add("build-frontend", "@yearly", func() {
-		if err := backend.buildFrontend(); err != nil {
+		if err := backend.buildFrontend(buildModeForceReinstall); err != nil {
 			backend.Logger().Error("Failed to build frontend", "error", err)
 		}
 	}); err != nil {
@@ -157,7 +157,7 @@ func (b *Backend) runJobs() {
 			With("bgo_rebuild", triggerBGORebuild).
 			With("details_rebuild", triggerDetailsRebuild).
 			Info("Triggering frontend rebuild")
-		if err := b.buildFrontend(); err != nil {
+		if err := b.buildFrontend(buildModeCached); err != nil {
 			b.Logger().Error("Failed to build frontend", "error", err)
 		}
 	}
