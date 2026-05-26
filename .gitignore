@@ -13,6 +13,9 @@
 # VS Code
 .vscode
 
+# Zed
+.zed
+
 # Project specific
 wishlist-backend-linux-arm64
 

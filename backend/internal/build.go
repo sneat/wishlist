@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"os/exec"
@@ -8,16 +10,79 @@ import (
 	"time"
 )
 
-func (b *Backend) buildFrontend() error {
+const lockfileHashMarker = ".wishlist-lockfile-hash"
+
+type buildMode int
+
+const (
+	buildModeCached buildMode = iota
+	buildModeForceReinstall
+)
+
+func lockfileHash(buildDir string) (string, error) {
+	data, err := os.ReadFile(filepath.Join(buildDir, "package-lock.json"))
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func shouldInstallDeps(buildDir string, mode buildMode) (bool, string) {
+	if mode == buildModeForceReinstall {
+		return true, "force reinstall"
+	}
+
+	nmInfo, err := os.Stat(filepath.Join(buildDir, "node_modules"))
+	if err != nil || !nmInfo.IsDir() {
+		return true, "node_modules missing"
+	}
+
+	markerBytes, err := os.ReadFile(filepath.Join(buildDir, "node_modules", lockfileHashMarker))
+	if err != nil {
+		return true, "marker missing"
+	}
+
+	current, err := lockfileHash(buildDir)
+	if err != nil {
+		return true, "lockfile unreadable"
+	}
+
+	if string(markerBytes) != current {
+		return true, "lockfile changed"
+	}
+
+	return false, "lockfile unchanged"
+}
+
+func (b *Backend) buildFrontend(mode buildMode) error {
 	start := time.Now()
 
 	b.Logger().Info("Building frontend")
 
-	// Check if the frontend directory exists and is a directory
-	if stat, err := os.Stat(b.buildDir); os.IsNotExist(err) || !stat.IsDir() {
+	if err := b.resolveBuildDir(); err != nil {
+		return err
+	}
+
+	if err := b.ensureDependencies(mode); err != nil {
+		return err
+	}
+
+	if err := b.runAstroBuild(); err != nil {
+		return err
+	}
+
+	b.Logger().
+		With("duration", time.Since(start).String()).
+		Info("Frontend build completed")
+
+	return nil
+}
+
+func (b *Backend) resolveBuildDir() error {
+	if stat, err := os.Stat(b.buildDir); os.IsNotExist(err) || (err == nil && !stat.IsDir()) {
 		possiblePaths := []string{"./frontend", "../frontend"}
 
-		// Check if any of the possible paths exist and is a directory
 		var validPath string
 		for _, path := range possiblePaths {
 			if stat, err = os.Stat(path); err == nil && stat.IsDir() {
@@ -54,18 +119,54 @@ func (b *Backend) buildFrontend() error {
 		b.buildDir = fullPath
 	}
 
-	// Run npm install first
-	cmd := exec.Command("npm", "install")
+	return nil
+}
+
+func (b *Backend) ensureDependencies(mode buildMode) error {
+	install, reason := shouldInstallDeps(b.buildDir, mode)
+	if !install {
+		b.Logger().
+			With("reason", reason).
+			Info("Skipping npm install (lockfile unchanged)")
+		return nil
+	}
+
+	b.Logger().
+		With("reason", reason).
+		Info("Installing frontend dependencies")
+
+	cmd := exec.Command("npm", "ci", "--prefer-offline", "--no-audit", "--no-fund")
 	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		b.Logger().
 			With("error", err, "output", string(output)).
-			Error("Failed to build frontend (npm install)")
+			Error("Failed to build frontend (npm ci)")
 		return err
 	}
 
-	cmd = exec.Command("npm", "run", "build")
+	hash, err := lockfileHash(b.buildDir)
+	if err != nil {
+		b.Logger().
+			With("error", err).
+			Warn("Skipping lockfile-hash marker write (lockfile unreadable after install)")
+		return nil
+	}
+
+	markerPath := filepath.Join(b.buildDir, "node_modules", lockfileHashMarker)
+	if err := os.WriteFile(markerPath, []byte(hash), 0o644); err != nil {
+		b.Logger().
+			With("error", err).
+			With("path", markerPath).
+			Warn("Failed to write lockfile-hash marker")
+		return nil
+	}
+
+	return nil
+}
+
+func (b *Backend) runAstroBuild() error {
+	cmd := exec.Command("npm", "run", "build")
 	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -74,10 +175,6 @@ func (b *Backend) buildFrontend() error {
 			Error("Failed to build frontend (npm run build)")
 		return err
 	}
-
-	b.Logger().
-		With("duration", time.Since(start).String()).
-		Info("Frontend build completed")
 
 	return nil
 }
