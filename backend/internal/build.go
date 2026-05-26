@@ -123,16 +123,43 @@ func (b *Backend) resolveBuildDir() error {
 }
 
 func (b *Backend) ensureDependencies(mode buildMode) error {
-	_ = mode
+	install, reason := shouldInstallDeps(b.buildDir, mode)
+	if !install {
+		b.Logger().
+			With("reason", reason).
+			Info("Skipping npm install (lockfile unchanged)")
+		return nil
+	}
 
-	cmd := exec.Command("npm", "install")
+	b.Logger().
+		With("reason", reason).
+		Info("Installing frontend dependencies")
+
+	cmd := exec.Command("npm", "ci", "--prefer-offline", "--no-audit", "--no-fund")
 	cmd.Dir = b.buildDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		b.Logger().
 			With("error", err, "output", string(output)).
-			Error("Failed to build frontend (npm install)")
+			Error("Failed to build frontend (npm ci)")
 		return err
+	}
+
+	hash, err := lockfileHash(b.buildDir)
+	if err != nil {
+		b.Logger().
+			With("error", err).
+			Warn("Skipping lockfile-hash marker write (lockfile unreadable after install)")
+		return nil
+	}
+
+	markerPath := filepath.Join(b.buildDir, "node_modules", lockfileHashMarker)
+	if err := os.WriteFile(markerPath, []byte(hash), 0o644); err != nil {
+		b.Logger().
+			With("error", err).
+			With("path", markerPath).
+			Warn("Failed to write lockfile-hash marker")
+		return nil
 	}
 
 	return nil
