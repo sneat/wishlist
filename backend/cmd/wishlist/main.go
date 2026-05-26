@@ -21,8 +21,8 @@ func main() {
 		}
 	}
 
-	username := os.Getenv("USERNAME")
-	password := os.Getenv("PASSWORD")
+	username := os.Getenv("BGG_USERNAME")
+	password := os.Getenv("BGG_PASSWORD")
 	countryCode := os.Getenv("COUNTRY_CODE")
 	buildDir := os.Getenv("DIR")
 	bggAuthToken := os.Getenv("BGG_AUTH_TOKEN")

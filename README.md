@@ -71,9 +71,9 @@ The backend is configured via a small set of environment variables:
 
 | Name             | Required?            | Description                                                                                                                       | Example           |
 |------------------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|-------------------|
-| `USERNAME`       | Yes                  | Your BoardGameGeek username. Used for knowing which wishlist to sync.                                                             | `my_bgg_username` |
+| `BGG_USERNAME`   | Yes                  | Your BoardGameGeek username. Used for knowing which wishlist to sync.                                                             | `my_bgg_username` |
 | `BGG_AUTH_TOKEN` | Yes*                 | BoardGameGeek application auth token from <https://boardgamegeek.com/applications>. Preferred over username/password.             | `abc123...`       |
-| `PASSWORD`       | Yes*                 | Your BoardGameGeek password. Only needed if you're not using an auth token.                                                       | `my_bgg_password` |
+| `BGG_PASSWORD`   | Yes*                 | Your BoardGameGeek password. Only needed if you're not using an auth token.                                                       | `my_bgg_password` |
 | `COUNTRY_CODE`   | Yes                  | ISO country code used when looking up prices via Board Game Oracle (e.g. AU).                                                     | `AU`              |
 | `DIR`            | No (but recommended) | Path to the frontend source directory. Used as the starting point for building the frontend with `npm install` / `npm run build`. | `../frontend`     |
 | `ENV`            | No                   | When set to `development`, enables extra development tooling via Outrig.                                                          | `development`     |
@@ -93,7 +93,7 @@ To configure these for local development, create a `frontend/.env` file (see `fr
 You can authenticate with BoardGameGeek in one of two ways:
 
 - **Recommended:** set `BGG_AUTH_TOKEN` to a token created at <https://boardgamegeek.com/applications>.
-- **Alternative:** set `USERNAME` and `PASSWORD` if you prefer to authenticate with your BGG login.
+- **Alternative:** set `BGG_USERNAME` and `BGG_PASSWORD` if you prefer to authenticate with your BGG login.
 
 Only one of these approaches needs to be configured. If both are set, the backend will use the auth token and ignore the password.
 
@@ -116,11 +116,12 @@ export ENV=development
 
 # BoardGameGeek authentication (choose one approach)
 # Recommended: application auth token from https://boardgamegeek.com/applications
+export BGG_USERNAME="your_bgg_username"
 export BGG_AUTH_TOKEN="your_bgg_token"
 
 # Alternative: username/password login
-# export USERNAME="your_bgg_username"
-# export PASSWORD="your_bgg_password"
+# export BGG_USERNAME="your_bgg_username"
+# export BGG_PASSWORD="your_bgg_password"
 
 # Board Game Oracle region (e.g. AU)
 export COUNTRY_CODE="AU"
@@ -204,10 +205,11 @@ cd backend
 export ENV=production
 
 # BoardGameGeek authentication
+export BGG_USERNAME="your_bgg_username"
 export BGG_AUTH_TOKEN="your_bgg_token"
 # or:
-# export USERNAME="your_bgg_username"
-# export PASSWORD="your_bgg_password"
+# export BGG_USERNAME="your_bgg_username"
+# export BGG_PASSWORD="your_bgg_password"
 
 # Board Game Oracle region (e.g. AU)
 export COUNTRY_CODE="AU"
@@ -277,7 +279,7 @@ A simple deployment setup looks like:
    ```
 
 3. **Configure environment variables**
-   - Set `BGG_AUTH_TOKEN` (or `USERNAME` / `PASSWORD`).
+   - Set `BGG_AUTH_TOKEN` and `BGG_USERNAME` (or `BGG_PASSWORD` instead of token).
    - Set `COUNTRY_CODE` (e.g. `AU`).
    - Set `DIR` to the Astro project directory (usually `../frontend`).
    - Optionally set `ENV=production`.
@@ -375,7 +377,7 @@ Watching logs (either in the terminal or via the PocketBase admin) is the easies
     - If using `BGG_AUTH_TOKEN`:
       - Regenerate the token from <https://boardgamegeek.com/applications>.
       - Update the environment variable and restart the backend.
-    - If using `USERNAME` / `PASSWORD`:
+    - If using `BGG_USERNAME` / `BGG_PASSWORD`:
       - Double-check the credentials.
       - If you keep hitting `EOF`, wait a bit and retry in case of transient BGG issues.
 
@@ -408,4 +410,3 @@ Watching logs (either in the terminal or via the PocketBase admin) is the easies
 
 - [BoardGameGeek](https://boardgamegeek.com) for wishlist and collection data
 - [Board Game Oracle](https://boardgameoracle.com) for Australian price data
-
