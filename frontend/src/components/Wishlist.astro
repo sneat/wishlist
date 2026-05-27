@@ -182,7 +182,7 @@ function isUpdatedGame(game: BoardGame): boolean {
                inferSize alt={game.name} />
         <div class="mt-1">
           <h2 class="text-lg text-center">
-            {game.name} ({game.yearPublished})
+            {game.name}{game.yearPublished > 0 ? ` (${game.yearPublished})` : ""}
             {(game.priority > 0 && game.priority < 3) &&
               <span class="*:inline-block *:align-top *:fill-red-500">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
