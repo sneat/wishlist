@@ -3,9 +3,9 @@ export interface BoardGame {
     name: string;
     thumbnail: string;
     image: string;
-    yearPublished: string;
+    yearPublished: number;
     players: string;
-    playingTime?: string;
+    playingTime?: number;
     rating: number;
     priority: number;
     price: number;
@@ -17,7 +17,7 @@ export interface BoardGame {
     description?: string;
     minAge?: number;
     bestPlayerCount?: string;
-    bestPlayerCountNumbers?: string;
+    bestPlayerCountNumber?: number;
     categories?: string[];
     mechanics?: string[];
     bggRank?: number;
@@ -36,12 +36,12 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         name: item.name,
         thumbnail: item.thumbnail,
         image: item.image,
-        yearPublished: item.year_published,
+        yearPublished: item.year_published ?? 0,
         players: item.players,
-        playingTime: item.playing_time,
-        rating: item.rating,
-        priority: parseInt(item.priority, 10) || 0,
-        price: parseInt(item.price, 10) || 0,
+        playingTime: item.playing_time ?? 0,
+        rating: item.rating ?? 0,
+        priority: item.priority ?? 0,
+        price: item.price ?? 0,
         isOwned: !!item.is_owned,
         lastModified: item.last_modified,
         createdAt: item.created_at,
@@ -52,10 +52,10 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         description: item.description,
         minAge: item.minage,
         bestPlayerCount: item.best_player_count,
-        bestPlayerCountNumbers: item.best_player_count_numbers,
+        bestPlayerCountNumber: item.best_player_count_number ?? 0,
         categories: item.categories,
         mechanics: item.mechanics,
-        bggRank: item.bgg_rank,
+        bggRank: item.bgg_rank ?? 0,
         detailsLastFetched: item.details_last_fetched,
     }));
 }

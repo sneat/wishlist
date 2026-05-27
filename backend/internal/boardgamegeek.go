@@ -76,45 +76,9 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 				newItems = append(newItems, record)
 			}
 
-			// Parse the player count as integers
-			minPlayers, err := strconv.Atoi(item.Stats.MinPlayers)
-			if err != nil {
-				minPlayers = 0
+			for k, v := range bggItemToFields(item) {
+				record.Set(k, v)
 			}
-			maxPlayers, err := strconv.Atoi(item.Stats.MaxPlayers)
-			if err != nil {
-				maxPlayers = 0
-			}
-
-			players := ""
-			if minPlayers != 0 && maxPlayers != 0 {
-				players = fmt.Sprintf("%d-%d", minPlayers, maxPlayers)
-			} else if minPlayers != 0 {
-				players = fmt.Sprintf("%d+", minPlayers)
-			} else if maxPlayers != 0 {
-				players = fmt.Sprintf("Up to %d", maxPlayers)
-			}
-
-			// Parse the rating and round to 2 decimal places
-			rating := item.Stats.Rating.Average.Value
-			if rating != "" {
-				ratingValue, err := strconv.ParseFloat(rating, 64)
-				if err != nil {
-					rating = ""
-				} else {
-					rating = fmt.Sprintf("%.2f", ratingValue)
-				}
-			}
-
-			record.Set("name", item.Name)
-			record.Set("thumbnail", item.Thumbnail)
-			record.Set("image", item.Image)
-			record.Set("year_published", item.YearPublished)
-			record.Set("players", players)
-			record.Set("rating", rating)
-			record.Set("priority", item.Status.WishlistPriority)
-			record.Set("playing_time", item.Stats.PlayingTime)
-			record.Set("bgg_id", item.ObjectID)
 			isOwned := item.Status.Own == "1"
 			if record.GetBool("is_owned") != isOwned {
 				newItems = append(newItems, record)
@@ -123,16 +87,6 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 			record.Set("last_modified", item.Status.GetLastModified().Format("2006-01-02 15:04:05.000Z"))
 			if isNewRecord {
 				record.Set("created_at", item.Status.GetLastModified().Format("2006-01-02 15:04:05.000Z"))
-			}
-
-			// Extract BGG rank from collection stats
-			if len(item.Stats.Rating.Ranks.Rank) > 0 {
-				for _, rank := range item.Stats.Rating.Ranks.Rank {
-					if rank.Name == "boardgame" && rank.Value != "Not Ranked" {
-						record.Set("bgg_rank", rank.Value)
-						break
-					}
-				}
 			}
 
 			if err = txApp.Save(record); err != nil {
@@ -381,8 +335,8 @@ type BGGThingItem struct {
 	ID string `xml:"id,attr" json:"id"`
 	// Description is the full description of the item.
 	Description string `xml:"description" json:"description"`
-	// MinAge is the minimum recommended age.
-	MinAge string `xml:"minage,attr" json:"min_age"`
+	// MinAge is the minimum recommended age. BGG returns it as <minage value="N"/>.
+	MinAge BGGRatingValue `xml:"minage" json:"min_age"`
 	// Polls contains detailed poll information.
 	Polls []BGGPoll `xml:"poll" json:"polls"`
 	// PollSummary contains poll summary information.
@@ -749,6 +703,66 @@ func extractPlayerRecommendations(polls []BGGPoll, pollSummaries []BGGPollSummar
 	return displayText, number
 }
 
+// bggItemToFields converts a BGGItem (from the collection XML) into the field-name → value
+// map that processBGGItems writes onto an items record. Numeric values are returned as
+// int / float64 so they round-trip cleanly through NumberField columns.
+func bggItemToFields(item BGGItem) map[string]any {
+	minPlayers := parseIntOrZero(item.Stats.MinPlayers)
+	maxPlayers := parseIntOrZero(item.Stats.MaxPlayers)
+
+	players := ""
+	switch {
+	case minPlayers != 0 && maxPlayers != 0:
+		players = fmt.Sprintf("%d-%d", minPlayers, maxPlayers)
+	case minPlayers != 0:
+		players = fmt.Sprintf("%d+", minPlayers)
+	case maxPlayers != 0:
+		players = fmt.Sprintf("Up to %d", maxPlayers)
+	}
+
+	bggRank := 0
+	for _, rank := range item.Stats.Rating.Ranks.Rank {
+		if rank.Name == "boardgame" && rank.Value != "Not Ranked" {
+			bggRank = parseIntOrZero(rank.Value)
+			break
+		}
+	}
+
+	return map[string]any{
+		"name":           item.Name,
+		"thumbnail":      item.Thumbnail,
+		"image":          item.Image,
+		"year_published": parseIntOrZero(item.YearPublished),
+		"players":        players,
+		"rating":         parseFloatOrZero(item.Stats.Rating.Average.Value),
+		"priority":       parseIntOrZero(item.Status.WishlistPriority),
+		"playing_time":   parseIntOrZero(item.Stats.PlayingTime),
+		"bgg_id":         item.ObjectID,
+		"bgg_rank":       bggRank,
+	}
+}
+
+// bggThingItemToFields converts a BGGThingItem (from the thing XML) into the field-name → value
+// map that fetchThingDetailsForItems writes onto an items record. The best_player_count_number
+// key uses the singular name introduced by the numeric-fields migration.
+func bggThingItemToFields(item BGGThingItem) map[string]any {
+	description := ""
+	if item.Description != "" {
+		description = truncateHTML(sanitizeHTML(item.Description), 5000)
+	}
+
+	bestPlayerCount, bestPlayerCountNumber := extractPlayerRecommendations(item.Polls, item.PollSummary)
+
+	return map[string]any{
+		"description":              description,
+		"minage":                   parseIntOrZero(item.MinAge.Value),
+		"best_player_count":        bestPlayerCount,
+		"best_player_count_number": parseIntOrZero(bestPlayerCountNumber),
+		"categories":               extractLinksByType(item.Links, "boardgamecategory"),
+		"mechanics":                extractLinksByType(item.Links, "boardgamemechanic"),
+	}
+}
+
 // fetchThingDetailsForItems fetches detailed information for items that need it.
 // If forceRefresh is true, all items are fetched regardless of staleness.
 // If limit > 0, only that many items are fetched.
@@ -824,33 +838,9 @@ func (b *Backend) fetchThingDetailsForItems(forceRefresh bool, limit int) (bool,
 				continue
 			}
 
-			// Extract, sanitize, and truncate description
-			description := ""
-			if thingItem.Description != "" {
-				sanitized := sanitizeHTML(thingItem.Description)
-				description = truncateHTML(sanitized, 5000)
+			for k, v := range bggThingItemToFields(thingItem) {
+				record.Set(k, v)
 			}
-
-			// Extract categories and mechanics
-			categories := extractLinksByType(thingItem.Links, "boardgamecategory")
-			mechanics := extractLinksByType(thingItem.Links, "boardgamemechanic")
-
-			// Extract player recommendations (both display text and numeric values)
-			bestPlayerCount, bestPlayerCountNumbers := extractPlayerRecommendations(thingItem.Polls, thingItem.PollSummary)
-
-			minAge := 0
-			if thingItem.MinAge != "" {
-				if age, err := strconv.Atoi(thingItem.MinAge); err == nil {
-					minAge = age
-				}
-			}
-
-			record.Set("description", description)
-			record.Set("minage", minAge)
-			record.Set("best_player_count", bestPlayerCount)
-			record.Set("best_player_count_numbers", bestPlayerCountNumbers)
-			record.Set("categories", categories)
-			record.Set("mechanics", mechanics)
 			record.Set("details_last_fetched", time.Now())
 
 			if err = b.Save(record); err != nil {
