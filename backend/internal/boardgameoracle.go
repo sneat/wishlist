@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net/http"
 	"net/url"
 	"sort"
 	"strings"
@@ -85,7 +84,7 @@ func (b *Backend) autoPopulateBGOId(bggRecord *core.Record) error {
 	q.Set("input", string(encodedData))
 	u.RawQuery = q.Encode()
 
-	resp, err := http.Get(u.String())
+	resp, err := httpClient.Get(u.String())
 	if err != nil {
 		return err
 	}
@@ -297,7 +296,7 @@ func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceSummary, erro
 	q.Set("input", string(encodedData))
 	u.RawQuery = q.Encode()
 
-	resp, err := http.Get(u.String())
+	resp, err := httpClient.Get(u.String())
 	if err != nil {
 		return nil, err
 	}
