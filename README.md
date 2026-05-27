@@ -84,8 +84,9 @@ The frontend can optionally be configured via environment variables:
 
 | Name              | Required? | Description                                                                          | Example                        |
 |-------------------|-----------|--------------------------------------------------------------------------------------|--------------------------------|
-| `PUBLIC_API_URL`  | No        | Backend API endpoint. Defaults to `http://127.0.0.1:8090` for local development.     | `https://api.example.com`      |
-| `PUBLIC_SITE_URL` | No        | Public site URL for sitemap and canonical URLs. Defaults to `http://localhost:4321`. | `https://wishlist.example.com` |
+| `PUBLIC_API_URL`   | No        | Backend API endpoint. Defaults to `http://127.0.0.1:8090` for local development.     | `https://api.example.com`      |
+| `PUBLIC_SITE_URL`  | No        | Public site URL for sitemap and canonical URLs. Defaults to `http://localhost:4321`. | `https://wishlist.example.com` |
+| `PUBLIC_BGO_LOCALE` | No        | Locale (language-region) used in outbound Board Game Oracle links. Defaults to `en-AU`. | `en-US`                        |
 
 To configure these for local development, create a `frontend/.env` file (see `frontend/.env.example` for a template).
 

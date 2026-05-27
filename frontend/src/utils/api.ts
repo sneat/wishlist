@@ -26,6 +26,7 @@ export interface BoardGame {
 
 // Use environment variable or fall back to localhost for development
 const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8090';
+const BGO_LOCALE = import.meta.env.PUBLIC_BGO_LOCALE || 'en-AU';
 
 export async function fetchWishlist(): Promise<BoardGame[]> {
     const response = await fetch(`${API_BASE_URL}/api/v1/bgg-wishlist`);
@@ -47,8 +48,8 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         createdAt: item.created_at,
         bggUrl: `https://boardgamegeek.com/boardgame/${item.bgg_id}`,
         bgoUrl: item.bgo_id ?
-            `https://www.boardgameoracle.com/en-AU/boardgame/price/${item.bgo_id}/` :
-            `https://www.boardgameoracle.com/en-AU/boardgame/search?q=${encodeURI(item.name)}`,
+            `https://www.boardgameoracle.com/${BGO_LOCALE}/boardgame/price/${item.bgo_id}/` :
+            `https://www.boardgameoracle.com/${BGO_LOCALE}/boardgame/search?q=${encodeURI(item.name)}`,
         description: item.description,
         minAge: item.minage,
         bestPlayerCount: item.best_player_count,
