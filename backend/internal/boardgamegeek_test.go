@@ -5,7 +5,28 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
+
+func TestBGGRetryBackoff(t *testing.T) {
+	cases := []struct {
+		attempt int
+		want    time.Duration
+	}{
+		{0, 2 * time.Second},
+		{1, 4 * time.Second},
+		{2, 8 * time.Second},
+		{3, 16 * time.Second},
+		{4, 30 * time.Second},  // 32s capped to 30s
+		{10, 30 * time.Second}, // capped
+		{62, 30 * time.Second}, // overflow guarded to cap
+	}
+	for _, tc := range cases {
+		if got := bggRetryBackoff(tc.attempt); got != tc.want {
+			t.Errorf("bggRetryBackoff(%d) = %v, want %v", tc.attempt, got, tc.want)
+		}
+	}
+}
 
 func loadCollectionFixture(t *testing.T) BGGRootXML {
 	t.Helper()

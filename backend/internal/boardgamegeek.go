@@ -127,27 +127,53 @@ func (b *Backend) processBGGItems(items []BGGItem) (bool, error) {
 	return triggerRebuild, err
 }
 
+// errBGGAccepted signals that BGG returned HTTP 202 (the collection request is being
+// prepared) and the call should be retried after a backoff.
+var errBGGAccepted = errors.New("bgg request accepted, retry")
+
+// httpClient is the shared client for all outbound BGG/BGO requests. The timeout bounds
+// the whole request (connect + body read) so a hung upstream can't stall a sync forever.
+var httpClient = &http.Client{Timeout: 30 * time.Second}
+
+const (
+	bggRetryBaseDelay = 2 * time.Second
+	bggRetryMaxDelay  = 30 * time.Second
+	bggMaxAttempts    = 8
+)
+
+// bggRetryBackoff returns the delay before the given (zero-based) retry attempt:
+// 2s doubling per attempt, capped at 30s. Overflow at large attempts is guarded to the cap.
+func bggRetryBackoff(attempt int) time.Duration {
+	if attempt < 0 {
+		attempt = 0
+	}
+	d := bggRetryBaseDelay << attempt
+	if d <= 0 || d > bggRetryMaxDelay {
+		return bggRetryMaxDelay
+	}
+	return d
+}
+
 // FetchBGGWishlistItems fetches the wishlist items for the configured username from Board Game Geek.
 func (b *Backend) FetchBGGWishlistItems() ([]BGGItem, error) {
-	i := 0
-	attempts := 10
-	for {
+	for attempt := range bggMaxAttempts {
 		items, err := b.fetchBGGData()
+		if errors.Is(err, errBGGAccepted) {
+			delay := bggRetryBackoff(attempt)
+			b.Logger().
+				With("attempt", attempt+1).
+				With("delay", delay.String()).
+				Info("BGG request accepted, retrying")
+			time.Sleep(delay)
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
-
-		if items != nil {
-			return items, nil
-		}
-
-		i++
-		if i > attempts {
-			break
-		}
+		return items, nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("failed to fetch data from BGG after %d attempts", attempts))
+	return nil, fmt.Errorf("failed to fetch data from BGG after %d attempts", bggMaxAttempts)
 }
 
 func (b *Backend) fetchBGGData() ([]BGGItem, error) {
@@ -165,16 +191,14 @@ func (b *Backend) fetchBGGData() ([]BGGItem, error) {
 		req.AddCookie(&http.Cookie{Name: "bggpassword", Value: b.password})
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusAccepted {
-		b.Logger().Info("Request accepted, retrying in 3 seconds...")
-		time.Sleep(3 * time.Second)
-		return nil, nil
+		return nil, errBGGAccepted
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -425,7 +449,7 @@ func (b *Backend) fetchBGGThingDetails(bggIDs []string) ([]BGGThingItem, error) 
 		req.AddCookie(&http.Cookie{Name: "bggpassword", Value: b.password})
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +463,7 @@ func (b *Backend) fetchBGGThingDetails(bggIDs []string) ([]BGGThingItem, error) 
 		// Wait a bit and retry once
 		time.Sleep(2 * time.Second)
 
-		resp2, err := http.DefaultClient.Do(req)
+		resp2, err := httpClient.Do(req)
 		if err != nil {
 			return nil, err
 		}
