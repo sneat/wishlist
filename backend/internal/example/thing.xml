@@ -1,0 +1,183 @@
+<items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
+    <item type="boardgame" id="316377">
+        <thumbnail>https://cf.geekdo-images.com/Naw8y8J_s-8cvq1GoTON6w__small/img/ieH8A28KJe3truXqQe1nDXSpxUE=/fit-in/200x150/filters:strip_icc()/pic7416519.jpg</thumbnail>
+        <image>https://cf.geekdo-images.com/Naw8y8J_s-8cvq1GoTON6w__original/img/8wVEVzdf5BoPvSiscnGvCAPNe2Q=/0x0/filters:format(jpeg)/pic7416519.jpg</image>
+        <name type="primary" sortindex="1" value="7 Wonders (Second Edition)"/>
+        <name type="alternate" sortindex="1" value="7 Csoda (2021-es kiad&#xE1;s)"/>
+        <name type="alternate" sortindex="1" value="7 Cud&#xF3;w &#x15A;wiata (Druga Edycja)"/>
+        <name type="alternate" sortindex="1" value="7 div&#x16F; sv&#x11B;ta (druh&#xE1; edice)"/>
+        <name type="alternate" sortindex="1" value="7 Wonders (2&#xAA; Edi&#xE7;&#xE3;o)"/>
+        <name type="alternate" sortindex="1" value="7 Wonders (editia II)"/>
+        <name type="alternate" sortindex="1" value="7 Wonders (Seconda Edizione)"/>
+        <name type="alternate" sortindex="1" value="7 Wonders (Zweite Edition)"/>
+        <name type="alternate" sortindex="1" value="7 &#x427;&#x443;&#x434;&#x435;&#x441; (2-&#x433;&#x435; &#x432;&#x438;&#x434;&#x430;&#x43D;&#x43D;&#x44F;)"/>
+        <name type="alternate" sortindex="1" value="7 &#x427;&#x443;&#x434;&#x435;&#x441; (2-&#x435; &#x438;&#x437;&#x434;&#x430;&#x43D;&#x438;&#x435;)"/>
+        <name type="alternate" sortindex="1" value="7 &#x5D4;&#x5E4;&#x5DC;&#x5D0;&#x5D9;&#x5DD;"/>
+        <name type="alternate" sortindex="1" value="7 &#xC6D0;&#xB354;&#xC2A4; (2&#xD310;)"/>
+        <name type="alternate" sortindex="1" value="&#x3A4;&#x3B1; 7 &#x398;&#x3B1;&#x3C5;&#x3BC;&#x3B1;&#x3C4;&#x3B1; &#x3C4;&#x3BF;&#x3C5; &#x39A;&#x3BF;&#x3C3;&#x3BC;&#x3BF;&#x3C5; (2&#x3B7; &#x395;&#x3BA;&#x3B4;&#x3BF;&#x3C3;&#x3B7;)"/>
+        <name type="alternate" sortindex="1" value="&#x4E03;&#x5927;&#x5947;&#x8E5F;&#xFF1A;&#x7B2C;&#x4E8C;&#x7248;"/>
+        <name type="alternate" sortindex="1" value="&#x4E16;&#x754C;&#x306E;&#x4E03;&#x4E0D;&#x601D;&#x8B70;&#xFF1A;&#x7B2C;&#x4E8C;&#x7248;"/>
+        <description>7 Wonders
+            The board game with more awards than any other game on the planet.
+            With over 30 international awards, and over a million copies sold throughout the world, rediscover 7 Wonders, the game which has won more awards than any other game in the world, in a whole new version.   Lauded by both the public and critics, 7 Wonders has claimed its place as an unmissable reference point in modern board gaming. 7 Wonders is based on a simple and elegant mechanic (drafting) which allows up to 7 players to play with no dead time. Players make their choice and apply all of them at the same time. These choices are varied and their impact is real. Finally, the game is divided into 3 Ages which little by little increase the importance of these choices and thus the tension in the game. The global mechanics and the care given to the artwork are used to immerse the player in Antiquity and have contributed to the game&amp;rsquo;s success.
+            A game plays out over 3 rounds, called Ages, during which you simultaneously play cards, one at a time, to develop your City.
+
+            These cards represent the various Buildings you can construct: resource producers, civilian, commercial, military, scientific structures, and guilds.
+
+            At the end of each Age, you go to war with your nearest neighbours. At the end of all 3 Ages, you tally up all of the victory points earned by your City, your wonder, your military prowess, and your treasury. The player with the highest score wins the game.
+
+            Content:
+            7 Wonder boards
+            148 Age cards: 49 Age I cards, 49 Age II cards, and 50 Age III cards
+            78 Coins: 54 Coins of value 1, and 24 Coins of value 3
+            48 Military Conflict tokens: 24 Defeats and 24 Victories (8 per Age)
+            1 pad of score sheets
+            3 quick reference sheets describing the effects of the cards
+            1 List of cards and chaining leaflet
+            1 rulebook
+
+        </description>
+        <yearpublished value="2020"/>
+        <minplayers value="3"/>
+        <maxplayers value="7"/>
+        <poll name="suggested_numplayers" title="User Suggested Number of Players" totalvotes="218">
+            <results numplayers="1">
+                <result value="Best" numvotes="0"/>
+                <result value="Recommended" numvotes="0"/>
+                <result value="Not Recommended" numvotes="159"/>
+            </results>
+            <results numplayers="2">
+                <result value="Best" numvotes="1"/>
+                <result value="Recommended" numvotes="8"/>
+                <result value="Not Recommended" numvotes="156"/>
+            </results>
+            <results numplayers="3">
+                <result value="Best" numvotes="37"/>
+                <result value="Recommended" numvotes="126"/>
+                <result value="Not Recommended" numvotes="36"/>
+            </results>
+            <results numplayers="4">
+                <result value="Best" numvotes="126"/>
+                <result value="Recommended" numvotes="74"/>
+                <result value="Not Recommended" numvotes="1"/>
+            </results>
+            <results numplayers="5">
+                <result value="Best" numvotes="142"/>
+                <result value="Recommended" numvotes="53"/>
+                <result value="Not Recommended" numvotes="2"/>
+            </results>
+            <results numplayers="6">
+                <result value="Best" numvotes="73"/>
+                <result value="Recommended" numvotes="95"/>
+                <result value="Not Recommended" numvotes="12"/>
+            </results>
+            <results numplayers="7">
+                <result value="Best" numvotes="49"/>
+                <result value="Recommended" numvotes="103"/>
+                <result value="Not Recommended" numvotes="24"/>
+            </results>
+            <results numplayers="7+">
+                <result value="Best" numvotes="0"/>
+                <result value="Recommended" numvotes="1"/>
+                <result value="Not Recommended" numvotes="126"/>
+            </results>
+        </poll>
+        <poll-summary name="suggested_numplayers" title="User Suggested Number of Players">
+            <result name="bestwith" value="Best with 4&#x2013;5 players"/>
+            <result name="recommmendedwith" value="Recommended with 3&#x2013;7 players"/>
+        </poll-summary>
+        <playingtime value="30"/>
+        <minplaytime value="30"/>
+        <maxplaytime value="30"/>
+        <minage value="10"/>
+        <poll name="suggested_playerage" title="User Suggested Player Age" totalvotes="37">
+            <results>
+                <result value="2" numvotes="0"/>
+                <result value="3" numvotes="0"/>
+                <result value="4" numvotes="0"/>
+                <result value="5" numvotes="0"/>
+                <result value="6" numvotes="5"/>
+                <result value="8" numvotes="5"/>
+                <result value="10" numvotes="22"/>
+                <result value="12" numvotes="5"/>
+                <result value="14" numvotes="0"/>
+                <result value="16" numvotes="0"/>
+                <result value="18" numvotes="0"/>
+                <result value="21 and up" numvotes="0"/>
+            </results>
+        </poll>
+        <poll name="language_dependence" title="Language Dependence" totalvotes="17">
+            <results>
+                <result level="1" value="No necessary in-game text" numvotes="16"/>
+                <result level="2" value="Some necessary text - easily memorized or small crib sheet" numvotes="1"/>
+                <result level="3" value="Moderate in-game text - needs crib sheet or paste ups" numvotes="0"/>
+                <result level="4" value="Extensive use of text - massive conversion needed to be playable" numvotes="0"/>
+                <result level="5" value="Unplayable in another language" numvotes="0"/>
+            </results>
+        </poll>
+        <link type="boardgamecategory" id="1050" value="Ancient"/>
+        <link type="boardgamecategory" id="1002" value="Card Game"/>
+        <link type="boardgamecategory" id="1029" value="City Building"/>
+        <link type="boardgamecategory" id="1015" value="Civilization"/>
+        <link type="boardgamecategory" id="1021" value="Economic"/>
+        <link type="boardgamemechanic" id="2984" value="Closed Drafting"/>
+        <link type="boardgamemechanic" id="2040" value="Hand Management"/>
+        <link type="boardgamemechanic" id="3104" value="Neighbor Scope"/>
+        <link type="boardgamemechanic" id="2004" value="Set Collection"/>
+        <link type="boardgamemechanic" id="2020" value="Simultaneous Action Selection"/>
+        <link type="boardgamemechanic" id="2015" value="Variable Player Powers"/>
+        <link type="boardgamefamily" id="77906" value="Category: Dized Tutorial"/>
+        <link type="boardgamefamily" id="77012" value="Constructions: Pyramids"/>
+        <link type="boardgamefamily" id="111038" value="Constructions: The Hanging Gardens of Babylon"/>
+        <link type="boardgamefamily" id="70360" value="Digital Implementations: Board Game Arena"/>
+        <link type="boardgamefamily" id="17552" value="Game: 7 Wonders"/>
+        <link type="boardgamefamily" id="27646" value="Mechanism: Tableau Building"/>
+        <link type="boardgamefamily" id="78198" value="Misc: Watch It Played How To Videos"/>
+        <link type="boardgameexpansion" id="331815" value="7 Wonders (Second Edition): Architects Guild Promo Card"/>
+        <link type="boardgameexpansion" id="316382" value="7 Wonders (Second Edition): Armada"/>
+        <link type="boardgameexpansion" id="316378" value="7 Wonders (Second Edition): Cities"/>
+        <link type="boardgameexpansion" id="423428" value="7 Wonders (Second Edition): Forgers Guild Promo Card"/>
+        <link type="boardgameexpansion" id="331817" value="7 Wonders (Second Edition): Gamers Guild Promo Card"/>
+        <link type="boardgameexpansion" id="316380" value="7 Wonders (Second Edition): Leaders"/>
+        <link type="boardgameexpansion" id="423426" value="7 Wonders (Second Edition): Leaders &#x2013; Diplomats Guild Promo Card"/>
+        <link type="boardgameexpansion" id="379939" value="7 Wonders (Second Edition): Mourners Guild"/>
+        <link type="boardgameexpansion" id="342714" value="7 Wonders: Cities &#x2013; Shadow Guild Promo Card"/>
+        <link type="boardgameexpansion" id="456148" value="7 Wonders: Diceopolis"/>
+        <link type="boardgameexpansion" id="378839" value="7 Wonders: Edifice"/>
+        <link type="boardgameexpansion" id="379940" value="7 Wonders: Edifice &#x2013; Engineers Guild Promo Card"/>
+        <link type="boardgameexpansion" id="342706" value="7 Wonders: Leaders &#x2013; C&#xE9;drick &amp; Thomas Promo Card"/>
+        <link type="boardgameexpansion" id="83445" value="7 Wonders: Manneken Pis"/>
+        <link type="boardgameexpansion" id="381494" value="7 Wonders: Societas Pictorium Guild Promo Card"/>
+        <link type="boardgameexpansion" id="447859" value="7 Wonders: The Great Wall"/>
+        <link type="boardgameexpansion" id="329310" value="Modern Wonders (fan expansion for 7 Wonders)"/>
+        <link type="boardgameexpansion" id="367248" value="More Leaders (fan expansion for 7 Wonders)"/>
+        <link type="boardgameaccessory" id="437508" value="7 Wonders (Second Edition): Braille Accessibility Kit"/>
+        <link type="boardgameaccessory" id="328885" value="7 Wonders (Second Edition): Folded Space Insert"/>
+        <link type="boardgameaccessory" id="350667" value="7 Wonders (Second Edition): Laserox Organizer"/>
+        <link type="boardgameaccessory" id="373717" value="7 Wonders (Second Edition): Spike Craft Insert"/>
+        <link type="boardgameaccessory" id="348558" value="7 Wonders (Second edition): The GiftForge Insert"/>
+        <link type="boardgameaccessory" id="365804" value="7 Wonders (Second Edition): Tower Rex Organizer"/>
+        <link type="boardgameaccessory" id="418058" value="7 Wonders: Edifice &#x2013; Laserox Organizer Upgrade Kit"/>
+        <link type="boardgameaccessory" id="448081" value="7 Wonders: Game Tamer Insert"/>
+        <link type="boardgameaccessory" id="428485" value="7 Wonders: Hobby Next Kit"/>
+        <link type="boardgameaccessory" id="364784" value="7 Wonders: Leaders &#x2013; Moedas &amp; Co. Metal Coins"/>
+        <link type="boardgameaccessory" id="196929" value="7 Wonders: Metal Coins"/>
+        <link type="boardgameaccessory" id="364783" value="7 Wonders: Moedas &amp; Co. Metal Coins"/>
+        <link type="boardgameimplementation" id="346703" value="7 Wonders: Architects"/>
+        <link type="boardgameimplementation" id="68448" value="7 Wonders" inbound="true"/>
+        <link type="boardgamedesigner" id="9714" value="Antoine Bauza"/>
+        <link type="boardgameartist" id="12016" value="Miguel Coimbra"/>
+        <link type="boardgamepublisher" id="4384" value="Repos Production"/>
+        <link type="boardgamepublisher" id="23043" value="ADC Blackfire Entertainment"/>
+        <link type="boardgamepublisher" id="15605" value="Gal&#xE1;pagos Jogos"/>
+        <link type="boardgamepublisher" id="8820" value="G&#xE9;m Klub Kft."/>
+        <link type="boardgamepublisher" id="23382" value="HaKubia"/>
+        <link type="boardgamepublisher" id="1391" value="Hobby Japan"/>
+        <link type="boardgamepublisher" id="9634" value="KADABRA"/>
+        <link type="boardgamepublisher" id="6214" value="Kaissa Chess &amp; Games"/>
+        <link type="boardgamepublisher" id="8291" value="Korea Boardgames"/>
+        <link type="boardgamepublisher" id="9325" value="Lifestyle Boardgames Ltd"/>
+        <link type="boardgamepublisher" id="7466" value="Rebel Sp. z o.o."/>
+        <link type="boardgamepublisher" id="44209" value="&#x406;&#x433;&#x440;&#x43E;&#x43C;&#x430;&#x433;"/>
+    </item>
+</items>
