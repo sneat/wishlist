@@ -188,9 +188,10 @@ func (b *Backend) syncBGOPrices() bool {
 
 // processBGOPrices processes the BGO prices and updates the records.
 // It returns a boolean indicating whether a frontend rebuild is required.
-func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) (bool, error) {
+func (b *Backend) processBGOPrices(prices []*BGOPriceData) (bool, error) {
 	var triggerRebuild bool
-	for _, price := range prices {
+	for _, data := range prices {
+		price := &data.PriceSummary
 		b.Logger().Debug(fmt.Sprintf("Processing BGO price for %s", price.BgoId))
 
 		err := b.RunInTransaction(func(txApp core.App) error {
@@ -217,6 +218,12 @@ func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) (bool, error) {
 
 			record.Set("price", roundedValue)
 
+			history := compactPriceHistory(data.History)
+			if len(history) > 0 {
+				triggerRebuild = true
+				record.Set("price_history", history)
+			}
+
 			if err = txApp.Save(record); err != nil {
 				return err
 			}
@@ -232,8 +239,32 @@ func (b *Backend) processBGOPrices(prices []*BGOPriceSummary) (bool, error) {
 	return triggerRebuild, nil
 }
 
-func (b *Backend) fetchBGOPricingData() ([]*BGOPriceSummary, error) {
-	response := make([]*BGOPriceSummary, 0)
+// PriceHistoryPoint is a stored, frontend-facing price-history entry.
+type PriceHistoryPoint struct {
+	Date  string `json:"date"`
+	Price int    `json:"price"`
+}
+
+// compactPriceHistory maps BGO history points to the stored shape, rounding the
+// min to an int and discarding points whose rounded price is <= 0 (BGO occasionally
+// reports 0 for a gap / no stocked store, which would make a chart dip to zero).
+func compactPriceHistory(points []BGOPricePoint) []PriceHistoryPoint {
+	history := make([]PriceHistoryPoint, 0, len(points))
+	for _, p := range points {
+		price := int(math.Round(p.MinPrice))
+		if price <= 0 {
+			continue
+		}
+		history = append(history, PriceHistoryPoint{
+			Date:  p.Date.Format("2006-01-02"),
+			Price: price,
+		})
+	}
+	return history
+}
+
+func (b *Backend) fetchBGOPricingData() ([]*BGOPriceData, error) {
+	response := make([]*BGOPriceData, 0)
 
 	records, err := b.FindRecordsByFilter(
 		"items",
@@ -259,7 +290,7 @@ func (b *Backend) fetchBGOPricingData() ([]*BGOPriceSummary, error) {
 	return response, nil
 }
 
-func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceSummary, error) {
+func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceData, error) {
 	u, err := url.Parse("https://www.boardgameoracle.com/api/trpc/pricehistory.list,pricestats.get")
 	if err != nil {
 		return nil, errors.New("failed to generate BGO pricing URL")
@@ -275,14 +306,15 @@ func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceSummary, erro
 		Range string `json:"range,omitempty"`
 	}
 
+	region := strings.ToLower(b.countryCode)
 	requestData := make(map[string]BgoPriceRequestData)
 	requestData["0"] = BgoPriceRequestData{
-		Region: b.countryCode,
+		Region: region,
 		Key:    bgoId,
-		Range:  "7d",
+		Range:  "3m",
 	}
 	requestData["1"] = BgoPriceRequestData{
-		Region: b.countryCode,
+		Region: region,
 		Key:    bgoId,
 	}
 
@@ -312,17 +344,26 @@ func (b *Backend) fetchBGOPricingDataForID(bgoId string) (*BGOPriceSummary, erro
 		return nil, err
 	}
 
-	for _, response := range responses {
-		if response.Result.PriceSummary.ID != "" {
-			response.Result.PriceSummary.BgoId = bgoId
-
-			return &response.Result.PriceSummary, nil
+	// The batch returns two results — one carrying the summary (pricestats.get),
+	// one carrying the history array (pricehistory.list). Merge them into one.
+	merged := &BGOPriceData{}
+	for i := range responses {
+		res := &responses[i].Result
+		if res.PriceSummary.ID != "" {
+			res.PriceSummary.BgoId = bgoId
+			merged.PriceSummary = res.PriceSummary
+		}
+		if len(res.History) > 0 {
+			merged.History = res.History
 		}
 	}
 
-	b.Logger().With("response", responses).Error("No price summary found in response")
+	if merged.PriceSummary.ID == "" {
+		b.Logger().With("response", responses).Error("No price summary found in response")
+		return nil, errors.New("no price summary found in response")
+	}
 
-	return nil, errors.New("no price summary found in response")
+	return merged, nil
 }
 
 // BGOSuggestion represents an individual item being suggested.
@@ -361,33 +402,57 @@ type BGOSuggestionResponse struct {
 // BGOPriceResponse represents the top-level response structure of the pricing request.
 type BGOPriceResponse struct {
 	// Result contains the result data.
-	Result BGOPriceResult `json:"result"`
+	Result BGOPriceData `json:"result"`
 }
 
-// BGOPriceResult represents the result structure.
-type BGOPriceResult struct {
-	// Data contains the data, which can be either a slice of price points (which are ignored) or a BGOPriceSummary.
-	Data interface{} `json:"data"`
-	// PriceSummary contains the price summary.
-	PriceSummary BGOPriceSummary `json:"price_summary"`
+// BGOPricePoint is a single daily price-history entry from pricehistory.list.
+type BGOPricePoint struct {
+	// Date is the day this price point covers.
+	Date time.Time `json:"dt"`
+	// MinPrice is the lowest price across all stores on that day.
+	MinPrice float64 `json:"min"`
 }
 
-func (d *BGOPriceResult) UnmarshalJSON(data []byte) error {
+// BGOPriceData holds a game's BGO price data. When unmarshalling a single tRPC
+// result, `data` is either a price-history array (pricehistory.list) or a summary
+// object (pricestats.get), and UnmarshalJSON routes each into the matching field;
+// fetchBGOPricingDataForID then merges the batch's two results into one value.
+type BGOPriceData struct {
+	// PriceSummary of the board game.
+	PriceSummary BGOPriceSummary
+	// History is the price history of the board game.
+	History []BGOPricePoint
+}
+
+func (d *BGOPriceData) UnmarshalJSON(data []byte) error {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	// Unmarshal the data field only if it's not an array.
-	if val, ok := raw["data"]; ok && len(val) > 0 && val[0] != '[' {
-		var summary BGOPriceSummary
-		if err := json.Unmarshal(val, &summary); err != nil {
-			return err
-		}
-
-		d.PriceSummary = summary
+	val, ok := raw["data"]
+	if !ok || len(val) == 0 {
+		return nil
 	}
 
+	// The batched request hits two endpoints sharing this result shape:
+	// pricehistory.list returns `data` as an array of price points, while
+	// pricestats.get returns `data` as a summary object. Branch on the first
+	// byte to route each into the matching field.
+	if val[0] == '[' {
+		var points []BGOPricePoint
+		if err := json.Unmarshal(val, &points); err != nil {
+			return err
+		}
+		d.History = points
+		return nil
+	}
+
+	var summary BGOPriceSummary
+	if err := json.Unmarshal(val, &summary); err != nil {
+		return err
+	}
+	d.PriceSummary = summary
 	return nil
 }
 

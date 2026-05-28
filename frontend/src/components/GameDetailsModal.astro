@@ -25,9 +25,9 @@
         <h2 id="modal-title" class="text-2xl md:text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white"></h2>
 
         <div class="flex gap-6 mb-2 text-sm text-gray-600 dark:text-gray-400 justify-center flex-wrap">
-          <div id="modal-players"></div>
-          <div id="modal-rating"></div>
-          <div id="modal-playtime"></div>
+          <div><strong>Players:</strong> <span id="modal-players-value"></span></div>
+          <div><strong>Rating:</strong> <span id="modal-rating-value"></span></div>
+          <div id="modal-playtime"><strong>Playtime:</strong> <span id="modal-playtime-value"></span> min</div>
         </div>
 
         <div id="modal-player-recs" class="mb-6 text-sm text-gray-600 dark:text-gray-400 text-center hidden">
@@ -35,8 +35,31 @@
         </div>
 
         <div id="modal-wishlist-info" class="flex gap-6 mb-6 text-sm text-gray-600 dark:text-gray-400 justify-center flex-wrap">
-          <div id="modal-priority"></div>
-          <div id="modal-price"></div>
+          <div><strong>Priority:</strong> <span id="modal-priority-value"></span></div>
+          <div id="modal-price"><strong>Price:</strong> $<span id="modal-price-value"></span></div>
+        </div>
+
+        <div id="modal-price-history-section" class="mb-6 hidden">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-center">Price history (3 months)</h3>
+          <div class="relative">
+            <svg id="modal-price-chart" viewBox="0 0 640 180" class="w-full h-40 text-gray-500 dark:text-gray-400">
+              <g id="modal-price-y-axis"></g>
+              <g id="modal-price-x-axis"></g>
+              <polyline id="modal-price-line" fill="none" stroke="#0891b2" stroke-width="2"
+                        transform="translate(44,12)" vector-effect="non-scaling-stroke"></polyline>
+              <line id="modal-price-guide" class="hidden" stroke="currentColor" stroke-opacity="0.5"
+                    stroke-dasharray="3,3" y1="12" y2="152"></line>
+              <circle id="modal-price-dot" class="hidden" r="4" fill="#0891b2"></circle>
+              <rect id="modal-price-overlay" x="44" y="12" width="584" height="140" fill="transparent"
+                    style="cursor: crosshair; touch-action: none;"></rect>
+            </svg>
+            <div id="modal-price-tooltip"
+                 class="absolute pointer-events-none hidden px-2 py-1 rounded bg-gray-900/90 text-white text-xs whitespace-nowrap shadow-lg"
+                 style="transform: translate(-50%, -100%); margin-top: -10px;">
+              <div id="modal-price-tooltip-date"></div>
+              <div id="modal-price-tooltip-price" class="font-semibold"></div>
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-4 justify-center mb-6">
@@ -67,6 +90,21 @@
 </div>
 
 <script>
+  import { pricePolylinePoints, niceYMax } from "../utils/chart";
+
+  // Chart plot-area geometry, in viewBox coordinates (the SVG's viewBox is 640×180).
+  const PLOT_X = 44;
+  const PLOT_Y = 12;
+  const PLOT_W = 584;
+  const PLOT_H = 140;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  // Current series state for the hover handler — updated on every openModal.
+  let currentHistory: { date: string; price: number }[] = [];
+  let currentYMax = 0;
+  let currentMinTime = 0;
+  let currentTimeRange = 1;
+
   interface GameData {
     id: string;
     name: string;
@@ -91,6 +129,155 @@
     mechanics?: string[];
     bggRank?: number;
     detailsLastFetched?: string;
+    priceHistory?: { date: string; price: number }[];
+  }
+
+  // renderChips replaces a container's contents with one styled chip per label.
+  function renderChips(container: HTMLElement, labels: string[], chipClass: string) {
+    container.textContent = '';
+    for (const label of labels) {
+      const span = document.createElement('span');
+      span.className = chipClass;
+      span.textContent = label;
+      container.appendChild(span);
+    }
+  }
+
+  // renderPriceAxes builds the y-axis tick labels + grid lines and the x-axis date
+  // labels. Called once per openModal; rebuilds from scratch to match the current
+  // series' y range and date span.
+  function renderPriceAxes(yMax: number, points: { date: string; price: number }[]) {
+    const yAxis = document.getElementById('modal-price-y-axis') as SVGGElement | null;
+    const xAxis = document.getElementById('modal-price-x-axis') as SVGGElement | null;
+    if (!yAxis || !xAxis) return;
+
+    yAxis.textContent = '';
+    xAxis.textContent = '';
+
+    // 5 y-tick labels + faint grid lines at 0, 25%, 50%, 75%, 100% of yMax.
+    for (let i = 0; i <= 4; i++) {
+      const value = (yMax / 4) * i;
+      const y = PLOT_Y + PLOT_H - (value / yMax) * PLOT_H;
+
+      const line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', `${PLOT_X}`);
+      line.setAttribute('x2', `${PLOT_X + PLOT_W}`);
+      line.setAttribute('y1', `${y}`);
+      line.setAttribute('y2', `${y}`);
+      line.setAttribute('stroke', 'currentColor');
+      line.setAttribute('stroke-opacity', '0.15');
+      yAxis.appendChild(line);
+
+      const text = document.createElementNS(SVG_NS, 'text');
+      text.setAttribute('x', `${PLOT_X - 6}`);
+      text.setAttribute('y', `${y + 4}`);
+      text.setAttribute('font-size', '11');
+      text.setAttribute('fill', 'currentColor');
+      text.setAttribute('text-anchor', 'end');
+      text.textContent = `$${Math.round(value)}`;
+      yAxis.appendChild(text);
+    }
+
+    // 3 x-tick labels at start, middle, end of the date range.
+    const times = points.map((p) => new Date(p.date).getTime());
+    const minT = times[0];
+    const range = times[times.length - 1] - minT || 1;
+    for (const f of [0, 0.5, 1]) {
+      const d = new Date(minT + f * range);
+      const label = `${d.toLocaleString('en-US', { month: 'short' })} ${d.getFullYear()}`;
+      const x = PLOT_X + f * PLOT_W;
+
+      const text = document.createElementNS(SVG_NS, 'text');
+      text.setAttribute('x', `${x}`);
+      text.setAttribute('y', `${PLOT_Y + PLOT_H + 18}`);
+      text.setAttribute('font-size', '11');
+      text.setAttribute('fill', 'currentColor');
+      text.setAttribute('text-anchor', f === 0 ? 'start' : f === 1 ? 'end' : 'middle');
+      text.textContent = label;
+      xAxis.appendChild(text);
+    }
+  }
+
+  // hidePriceHover clears the guide line, dot, and tooltip when the cursor leaves
+  // the plot area.
+  function hidePriceHover() {
+    document.getElementById('modal-price-guide')?.classList.add('hidden');
+    document.getElementById('modal-price-dot')?.classList.add('hidden');
+    document.getElementById('modal-price-tooltip')?.classList.add('hidden');
+  }
+
+  // Wire hover once at module init (single set of listeners, reads currentHistory
+  // updated by openModal — avoids leaking handlers across modal opens).
+  const priceOverlay = document.getElementById('modal-price-overlay') as SVGRectElement | null;
+  if (priceOverlay) {
+    priceOverlay.addEventListener('pointermove', (e) => {
+      if (currentHistory.length < 2) return;
+      const svg = priceOverlay.ownerSVGElement;
+      if (!svg) return;
+
+      // svg.getScreenCTM() accounts for the viewBox + preserveAspectRatio letterbox,
+      // so cursor → viewBox stays accurate at every position (a plain rect-based map
+      // drifts towards the edges when the element's aspect ratio doesn't match the
+      // viewBox's).
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return;
+      const cursorPt = svg.createSVGPoint();
+      cursorPt.x = e.clientX;
+      cursorPt.y = e.clientY;
+      const vbCursor = cursorPt.matrixTransform(ctm.inverse());
+
+      if (vbCursor.x < PLOT_X || vbCursor.x > PLOT_X + PLOT_W) {
+        hidePriceHover();
+        return;
+      }
+
+      // Map cursor x to a time and find the nearest data point.
+      const t = currentMinTime + ((vbCursor.x - PLOT_X) / PLOT_W) * currentTimeRange;
+      let nearest = 0;
+      let bestDiff = Infinity;
+      for (let i = 0; i < currentHistory.length; i++) {
+        const diff = Math.abs(new Date(currentHistory[i].date).getTime() - t);
+        if (diff < bestDiff) { bestDiff = diff; nearest = i; }
+      }
+      const point = currentHistory[nearest];
+      const pointTime = new Date(point.date).getTime();
+      const px = PLOT_X + ((pointTime - currentMinTime) / currentTimeRange) * PLOT_W;
+      const py = PLOT_Y + PLOT_H - (point.price / currentYMax) * PLOT_H;
+
+      const guide = document.getElementById('modal-price-guide') as SVGLineElement | null;
+      const dot = document.getElementById('modal-price-dot') as SVGCircleElement | null;
+      const tooltip = document.getElementById('modal-price-tooltip') as HTMLElement | null;
+      const tooltipDate = document.getElementById('modal-price-tooltip-date');
+      const tooltipPrice = document.getElementById('modal-price-tooltip-price');
+
+      if (guide) {
+        guide.setAttribute('x1', `${px}`);
+        guide.setAttribute('x2', `${px}`);
+        guide.classList.remove('hidden');
+      }
+      if (dot) {
+        dot.setAttribute('cx', `${px}`);
+        dot.setAttribute('cy', `${py}`);
+        dot.classList.remove('hidden');
+      }
+      if (tooltip && tooltipDate && tooltipPrice) {
+        tooltipDate.textContent = point.date;
+        tooltipPrice.textContent = `$${point.price}`;
+
+        // viewBox → screen via the same CTM, then offset by the SVG's bounding rect
+        // to land in the tooltip's absolute-positioned container (which is the
+        // wrapper directly around the SVG).
+        const pointSvgPt = svg.createSVGPoint();
+        pointSvgPt.x = px;
+        pointSvgPt.y = py;
+        const pointScreen = pointSvgPt.matrixTransform(ctm);
+        const svgRect = svg.getBoundingClientRect();
+        tooltip.style.left = `${pointScreen.x - svgRect.left}px`;
+        tooltip.style.top = `${pointScreen.y - svgRect.top}px`;
+        tooltip.classList.remove('hidden');
+      }
+    });
+    priceOverlay.addEventListener('pointerleave', hidePriceHover);
   }
 
   const modal = document.getElementById('game-details-modal') as HTMLElement;
@@ -101,42 +288,44 @@
   function openModal(game: GameData) {
     const modalImage = document.getElementById('modal-image') as HTMLImageElement;
     const modalTitle = document.getElementById('modal-title') as HTMLElement;
-    const modalRating = document.getElementById('modal-rating') as HTMLElement;
-    const modalPlayers = document.getElementById('modal-players') as HTMLElement;
+    const modalRatingValue = document.getElementById('modal-rating-value') as HTMLElement;
+    const modalPlayersValue = document.getElementById('modal-players-value') as HTMLElement;
     const modalPlaytime = document.getElementById('modal-playtime') as HTMLElement;
+    const modalPlaytimeValue = document.getElementById('modal-playtime-value') as HTMLElement;
     const modalDescription = document.getElementById('modal-description') as HTMLElement;
     const modalBggLink = document.getElementById('modal-bgg-link') as HTMLAnchorElement;
     const modalBgoLink = document.getElementById('modal-bgo-link') as HTMLAnchorElement;
     const modalWishlistInfo = document.getElementById('modal-wishlist-info') as HTMLElement;
-    const modalPriority = document.getElementById('modal-priority') as HTMLElement;
+    const modalPriorityValue = document.getElementById('modal-priority-value') as HTMLElement;
     const modalPrice = document.getElementById('modal-price') as HTMLElement;
+    const modalPriceValue = document.getElementById('modal-price-value') as HTMLElement;
     const modalPlayerRecs = document.getElementById('modal-player-recs') as HTMLElement;
     const modalBestPlayers = document.getElementById('modal-best-players') as HTMLElement;
     const modalCategoriesSection = document.getElementById('modal-categories-section') as HTMLElement;
     const modalCategories = document.getElementById('modal-categories') as HTMLElement;
     const modalMechanicsSection = document.getElementById('modal-mechanics-section') as HTMLElement;
     const modalMechanics = document.getElementById('modal-mechanics') as HTMLElement;
+    const modalPriceHistorySection = document.getElementById('modal-price-history-section') as HTMLElement;
+    const modalPriceLine = document.getElementById('modal-price-line') as unknown as SVGPolylineElement | null;
 
     if (modalImage) {
       modalImage.src = game.image || game.thumbnail;
       modalImage.alt = game.name;
     }
     if (modalTitle) modalTitle.textContent = game.name;
-    if (modalRating) modalRating.innerHTML = `<strong>Rating:</strong> ${game.rating || 'N/A'}`;
-    if (modalPlayers) modalPlayers.innerHTML = `<strong>Players:</strong> ${game.players || 'N/A'}`;
+    if (modalRatingValue) modalRatingValue.textContent = game.rating ? game.rating.toFixed(2) : 'N/A';
+    if (modalPlayersValue) modalPlayersValue.textContent = game.players || 'N/A';
 
     if (modalPlayerRecs && game.bestPlayerCount) {
       modalPlayerRecs.classList.remove('hidden');
-      if (modalBestPlayers) {
-        modalBestPlayers.innerHTML = `${game.bestPlayerCount}`;
-      }
+      if (modalBestPlayers) modalBestPlayers.textContent = game.bestPlayerCount;
     } else if (modalPlayerRecs) {
       modalPlayerRecs.classList.add('hidden');
     }
 
     if (modalPlaytime) {
       if (game.playingTime) {
-        modalPlaytime.innerHTML = `<strong>Playtime:</strong> ${game.playingTime} min`;
+        if (modalPlaytimeValue) modalPlaytimeValue.textContent = `${game.playingTime}`;
         modalPlaytime.classList.remove('hidden');
       } else {
         modalPlaytime.classList.add('hidden');
@@ -147,13 +336,13 @@
       modalWishlistInfo?.classList.add('hidden');
     } else {
       modalWishlistInfo?.classList.remove('hidden');
-      if (modalPriority) {
+      if (modalPriorityValue) {
         const priorityText = game.priority === 1 ? 'Must have' : game.priority === 2 ? 'Love to have' : game.priority === 3 ? 'Like to have' : game.priority === 4 ? 'Thinking about it' : 'Wishlist priority unknown';
-        modalPriority.innerHTML = `<strong>Priority:</strong> ${priorityText}`;
+        modalPriorityValue.textContent = priorityText;
       }
-      if (modalPrice) {
+      if (modalPrice && modalPriceValue) {
         if (game.price > 0) {
-          modalPrice.innerHTML = `<strong>Price:</strong> $${game.price}`;
+          modalPriceValue.textContent = `${game.price}`;
           modalPrice.classList.remove('hidden');
         } else {
           modalPrice.classList.add('hidden');
@@ -168,9 +357,7 @@
     if (modalCategoriesSection && modalCategories) {
       if (game.categories && game.categories.length > 0) {
         modalCategoriesSection.classList.remove('hidden');
-        modalCategories.innerHTML = game.categories
-          .map(cat => `<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">${cat}</span>`)
-          .join('');
+        renderChips(modalCategories, game.categories, 'px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm');
       } else {
         modalCategoriesSection.classList.add('hidden');
       }
@@ -179,9 +366,7 @@
     if (modalMechanicsSection && modalMechanics) {
       if (game.mechanics && game.mechanics.length > 0) {
         modalMechanicsSection.classList.remove('hidden');
-        modalMechanics.innerHTML = game.mechanics
-          .map(mech => `<span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">${mech}</span>`)
-          .join('');
+        renderChips(modalMechanics, game.mechanics, 'px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm');
       } else {
         modalMechanicsSection.classList.add('hidden');
       }
@@ -202,6 +387,29 @@
         modalBgoLink.classList.remove('hidden');
       } else {
         modalBgoLink.classList.add('hidden');
+      }
+    }
+
+    if (modalPriceHistorySection && modalPriceLine) {
+      const history = game.priceHistory ?? [];
+      if (history.length >= 2) {
+        const prices = history.map((p) => p.price);
+        const yMax = niceYMax(Math.max(...prices));
+        const points = pricePolylinePoints(history, PLOT_W, PLOT_H, yMax);
+        modalPriceLine.setAttribute('points', points);
+        renderPriceAxes(yMax, history);
+
+        // Cache for the hover handler.
+        currentHistory = history;
+        currentYMax = yMax;
+        const times = history.map((p) => new Date(p.date).getTime());
+        currentMinTime = times[0];
+        currentTimeRange = times[times.length - 1] - currentMinTime || 1;
+
+        hidePriceHover();
+        modalPriceHistorySection.classList.remove('hidden');
+      } else {
+        modalPriceHistorySection.classList.add('hidden');
       }
     }
 
