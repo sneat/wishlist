@@ -22,6 +22,7 @@ export interface BoardGame {
     mechanics?: string[];
     bggRank?: number;
     detailsLastFetched?: string;
+    priceHistory?: { date: string; price: number }[];
 }
 
 // Use environment variable or fall back to localhost for development
@@ -58,5 +59,6 @@ export async function fetchWishlist(): Promise<BoardGame[]> {
         mechanics: item.mechanics,
         bggRank: item.bgg_rank ?? 0,
         detailsLastFetched: item.details_last_fetched,
+        priceHistory: item.price_history ?? [],
     }));
 }
