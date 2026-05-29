@@ -462,7 +462,7 @@
     updateFilterBadges();
   });
 
-  window.addEventListener("popstate", (event) => {
+  window.addEventListener("popstate", () => {
     // Reapply query params and filter games when navigating back/forward
     applyQueryParams();
     filterGames();

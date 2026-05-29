@@ -171,7 +171,7 @@ function isUpdatedGame(game: BoardGame): boolean {
 <FilterModal />
 
 <!-- Store wishlist data for client-side access -->
-<script id="wishlist-data" type="application/json" set:html={JSON.stringify(wishlist)}></script>
+<script id="wishlist-data" type="application/json" is:inline set:html={JSON.stringify(wishlist)}></script>
 
 <script>
   import '../scripts/wishlist.ts';

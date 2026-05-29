@@ -12,7 +12,4 @@ export default defineConfig({
   image: {
     domains: ["cf.geekdo-images.com"],
   },
-  experimental: {
-    svgo: true,
-  }
 });
